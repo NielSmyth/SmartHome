@@ -13,7 +13,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis, Area, AreaChart } from "recharts";
+import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis, Area, AreaChart, Tooltip } from "recharts";
 import { TrendingUp, Zap, ArrowDown, ArrowUp } from "lucide-react";
 
 const chartData = [
@@ -40,6 +40,24 @@ const sparklineData = [
     { x: 1, y: 10 }, { x: 2, y: 15 }, { x: 3, y: 12 }, { x: 4, y: 18 }, { x: 5, y: 14 },
     { x: 6, y: 22 }, { x: 7, y: 25 }, { x: 8, y: 20 }, { x: 9, y: 28 }, { x: 10, y: 30 }
 ];
+
+const SparklineTooltipContent = ({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: any[];
+}) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="p-2 text-sm bg-background border rounded-md shadow-lg">
+        Value: {payload[0].value}
+      </div>
+    );
+  }
+
+  return null;
+};
 
 export default function EnergyPage() {
   return (
@@ -135,7 +153,7 @@ export default function EnergyPage() {
                                     <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                                 </linearGradient>
                             </defs>
-                            <Tooltip content={<div className="p-2 text-sm bg-background border rounded-md shadow-lg">Value: { 'payload' in arguments[0] && arguments[0].payload[0] ? arguments[0].payload[0].value : '' }</div>} />
+                            <Tooltip content={<SparklineTooltipContent />} cursor={false} />
                             <Area type="monotone" dataKey="y" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorSpark)" />
                         </AreaChart>
                     </ChartContainer>
@@ -154,7 +172,7 @@ export default function EnergyPage() {
                                     <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0}/>
                                 </linearGradient>
                             </defs>
-                            <Tooltip content={<div className="p-2 text-sm bg-background border rounded-md shadow-lg">Value: { 'payload' in arguments[0] && arguments[0].payload[0] ? arguments[0].payload[0].value : '' }</div>} />
+                            <Tooltip content={<SparklineTooltipContent />} cursor={false} />
                             <Area type="monotone" dataKey="y" stroke="hsl(var(--accent))" fillOpacity={1} fill="url(#colorSparkAccent)" />
                         </AreaChart>
                     </ChartContainer>

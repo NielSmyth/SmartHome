@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Plus, Clock, Sun, Sunset, Users } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   Table,
   TableBody,

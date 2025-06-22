@@ -113,7 +113,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   asChild
                   isActive={pathname.startsWith(item.href)}
                   tooltip={item.label}
-                  className="group-data-[state=collapsed]:justify-center"
                 >
                   <Link href={item.href}>
                     <item.icon />

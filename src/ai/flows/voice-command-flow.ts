@@ -60,7 +60,7 @@ const prompt = ai.definePrompt({
   output: {schema: VoiceCommandOutputSchema},
   prompt: `You are a smart home voice assistant. Your task is to parse the user's command and convert it into a structured JSON object.
 Based on the command, determine the action ('device', 'scene', 'automation', or 'navigation'), the target, and any necessary value (e.g., true/false for on/off).
-Also, provide a short, natural language response to confirm the action.
+Also, provide a short, natural language response in the past tense to confirm the action has been completed (e.g., "Living room lights turned on", "Movie Night activated", "Security Mode paused").
 
 If the user's command is ambiguous or doesn't match any available items, set the action to 'unknown' and provide a helpful speech response like "Sorry, I couldn't find a device or scene with that name."
 

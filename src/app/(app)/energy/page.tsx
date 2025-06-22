@@ -13,27 +13,31 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis, Area, AreaChart, Tooltip } from "recharts";
+import { Area, AreaChart, CartesianGrid, Legend, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
 import { TrendingUp, Zap, ArrowDown, ArrowUp } from "lucide-react";
 
-const chartData = [
-  { month: "January", desktop: 186, mobile: 80 },
-  { month: "February", desktop: 305, mobile: 200 },
-  { month: "March", desktop: 237, mobile: 120 },
-  { month: "April", desktop: 73, mobile: 190 },
-  { month: "May", desktop: 209, mobile: 130 },
-  { month: "June", desktop: 214, mobile: 140 },
+const mainChartData = [
+  { month: "January", hvac: 186, lighting: 80, appliances: 60 },
+  { month: "February", hvac: 305, lighting: 200, appliances: 90 },
+  { month: "March", hvac: 237, lighting: 120, appliances: 100 },
+  { month: "April", hvac: 73, lighting: 190, appliances: 110 },
+  { month: "May", hvac: 209, lighting: 130, appliances: 120 },
+  { month: "June", hvac: 214, lighting: 140, appliances: 130 },
 ];
 
-const chartConfig = {
-  desktop: {
+const mainChartConfig = {
+  hvac: {
     label: "HVAC",
     color: "hsl(var(--primary))",
   },
-  mobile: {
+  lighting: {
     label: "Lighting",
     color: "hsl(var(--accent))",
   },
+  appliances: {
+    label: "Appliances",
+    color: "hsl(var(--destructive))",
+  }
 } satisfies ChartConfig;
 
 const sparklineData = [
@@ -112,7 +116,7 @@ export default function EnergyPage() {
               </CardContent>
           </Card>
       </div>
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Consumption Overview</CardTitle>
@@ -121,25 +125,30 @@ export default function EnergyPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-64">
-              <BarChart accessibilityLayer data={chartData}>
+            <ChartContainer config={mainChartConfig} className="h-80 w-full">
+              <LineChart
+                accessibilityLayer
+                data={mainChartData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
                 <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="month"
                   tickLine={false}
                   tickMargin={10}
                   axisLine={false}
-                  tickFormatter={(value) => value.slice(0, 3)}
                 />
                 <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="desktop" fill="var(--color-desktop)" radius={4} />
-                <Bar dataKey="mobile" fill="var(--color-mobile)" radius={4} />
-              </BarChart>
+                <Tooltip content={<ChartTooltipContent />} />
+                <Legend />
+                <Line type="monotone" dataKey="hvac" stroke="var(--color-hvac)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="lighting" stroke="var(--color-lighting)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="appliances" stroke="var(--color-appliances)" strokeWidth={2} dot={false} />
+              </LineChart>
             </ChartContainer>
           </CardContent>
         </Card>
-        <div className="grid gap-6">
+        <div className="grid gap-6 md:grid-cols-2">
             <Card>
                 <CardHeader>
                     <CardTitle>Lighting Usage (Last 24h)</CardTitle>

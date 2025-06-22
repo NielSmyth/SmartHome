@@ -11,6 +11,7 @@ import {
   Server,
   UserCircle,
   Settings,
+  LayoutDashboard,
 } from "lucide-react";
 
 import {
@@ -37,6 +38,11 @@ import {
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+  },
   {
     href: "/scenes",
     label: "Scenes",
@@ -84,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === item.href}
+                  isActive={pathname.startsWith(item.href)}
                   tooltip={item.label}
                 >
                   <Link href={item.href}>

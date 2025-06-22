@@ -20,7 +20,7 @@ import {
   Sun,
   Laptop,
   Bell,
-  Microphone,
+  Mic,
   Loader,
 } from "lucide-react";
 
@@ -276,7 +276,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4">
             {supported && (
                <Button variant="ghost" size="icon" onClick={handleVoiceButtonClick} disabled={isProcessingVoice}>
-                {isProcessingVoice ? <Loader className="h-[1.2rem] w-[1.2rem] animate-spin" /> : (isListening ? <Loader className="h-[1.2rem] w-[1.2rem] animate-pulse text-red-500" /> : <Microphone className="h-[1.2rem] w-[1.2rem]" />) }
+                {isProcessingVoice ? <Loader className="h-[1.2rem] w-[1.2rem] animate-spin" /> : (isListening ? <Loader className="h-[1.2rem] w-[1.2rem] animate-pulse text-red-500" /> : <Mic className="h-[1.2rem] w-[1.2rem]" />) }
                 <span className="sr-only">Voice Command</span>
               </Button>
             )}

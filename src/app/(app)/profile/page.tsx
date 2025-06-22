@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
 
 const profileFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -128,10 +129,10 @@ export default function ProfilePage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-4 border rounded-lg">
               <div className="space-y-0.5">
-                <FormLabel>System Alerts</FormLabel>
-                <FormDescription>
+                <Label>System Alerts</Label>
+                <p className="text-sm text-muted-foreground">
                   Receive alerts for system anomalies.
-                </FormDescription>
+                </p>
               </div>
               <Switch
                 checked={notificationSettings.systemAlerts}
@@ -140,10 +141,10 @@ export default function ProfilePage() {
             </div>
             <div className="flex items-center justify-between p-4 border rounded-lg">
               <div className="space-y-0.5">
-                <FormLabel>New Device Alerts</FormLabel>
-                <FormDescription>
+                <Label>New Device Alerts</Label>
+                <p className="text-sm text-muted-foreground">
                   Get notified when a new device is added.
-                </FormDescription>
+                </p>
               </div>
               <Switch
                 checked={notificationSettings.newDevice}
@@ -152,10 +153,10 @@ export default function ProfilePage() {
             </div>
             <div className="flex items-center justify-between p-4 border rounded-lg">
               <div className="space-y-0.5">
-                <FormLabel>Automation Updates</FormLabel>
-                <FormDescription>
+                <Label>Automation Updates</Label>
+                <p className="text-sm text-muted-foreground">
                   Receive updates about your automations.
-                </FormDescription>
+                </p>
               </div>
               <Switch
                 checked={notificationSettings.automationUpdates}

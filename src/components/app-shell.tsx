@@ -95,7 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
-        <SidebarHeader className="p-4 flex items-center justify-between group-data-[state=collapsed]:p-2 group-data-[state=collapsed]:justify-center">
+        <SidebarHeader className="p-4 flex items-center justify-between group-data-[state=collapsed]:p-2 group-data-[state=collapsed]:justify-center border-b">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-primary/20 text-primary">
               <Lightbulb className="w-6 h-6 group-data-[state=collapsed]:w-4 group-data-[state=collapsed]:h-4" />

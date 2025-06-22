@@ -3,172 +3,56 @@
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Clapperboard, Lightbulb, Thermometer, Zap } from "lucide-react";
-import Link from "next/link";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Lightbulb, Lamp, Lock, Camera, AirVent } from "lucide-react";
 
-const chartData = [
-  { day: "Monday", usage: 220 },
-  { day: "Tuesday", usage: 180 },
-  { day: "Wednesday", usage: 250 },
-  { day: "Thursday", usage: 210 },
-  { day: "Friday", usage: 300 },
-  { day: "Saturday", usage: 320 },
-  { day: "Sunday", usage: 280 },
+const devices = [
+  { name: 'Living Room Lights', location: 'Living Room', icon: Lightbulb, status: 'On', time: '2 min ago', active: true, statusVariant: 'default' },
+  { name: 'Kitchen Lights', location: 'Kitchen', icon: Lamp, status: 'Off', time: '5 min ago', active: false, statusVariant: 'secondary' },
+  { name: 'Bedroom Lights', location: 'Bedroom', icon: Lightbulb, status: 'On', time: '1 min ago', active: true, statusVariant: 'default' },
+  { name: 'Front Door Lock', location: 'Entrance', icon: Lock, status: 'Locked', time: '10 min ago', active: true, statusVariant: 'default' },
+  { name: 'Back Door Lock', location: 'Garden', icon: Lock, status: 'Unlocked', time: '15 min ago', active: false, statusVariant: 'destructive' },
+  { name: 'Security Camera 1', location: 'Living Room', icon: Camera, status: 'Recording', time: 'Just now', active: true, statusVariant: 'default' },
+  { name: 'Security Camera 2', location: 'Kitchen', icon: Camera, status: 'Recording', time: 'Just now', active: true, statusVariant: 'default' },
+  { name: 'Living Room AC', location: 'Living Room', icon: AirVent, status: 'Off', time: '30 min ago', active: false, statusVariant: 'secondary' },
+  { name: 'Bedroom AC', location: 'Bedroom', icon: AirVent, status: 'Cooling', time: '5 min ago', active: true, statusVariant: 'default' },
 ];
-
-const chartConfig = {
-  usage: {
-    label: "Energy (kWh)",
-    color: "hsl(var(--primary))",
-  },
-};
 
 export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">
-          Welcome Home, User!
+          Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Here's a quick overview of your smart home's status.
+          Welcome back! Here's a quick overview of your devices.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Active Lights</CardTitle>
-            <Lightbulb className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">5</div>
-            <p className="text-xs text-muted-foreground">in 3 rooms</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Indoor Temp</CardTitle>
-            <Thermometer className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">22°C</div>
-            <p className="text-xs text-muted-foreground">Comfortable</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Energy Usage</CardTitle>
-            <Zap className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1.2 kWh</div>
-            <p className="text-xs text-muted-foreground">Live consumption</p>
-          </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium">Quick Scene</CardTitle>
-                <Clapperboard className="w-4 h-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <Button className="w-full">Activate Movie Night</Button>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {devices.map((device) => (
+          <Card key={device.name}>
+            <CardContent className="p-4 flex flex-col gap-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <device.icon className="w-6 h-6 text-primary" />
+                  <div>
+                    <p className="font-semibold">{device.name}</p>
+                    <p className="text-sm text-muted-foreground">{device.location}</p>
+                  </div>
+                </div>
+                <Switch defaultChecked={device.active} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Badge variant={device.statusVariant as any}>{device.status}</Badge>
+                <p className="text-sm text-muted-foreground">{device.time}</p>
+              </div>
             </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Weekly Energy Consumption</CardTitle>
-            <CardDescription>
-              An overview of your energy usage for the last 7 days.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-64">
-              <AreaChart
-                accessibilityLayer
-                data={chartData}
-                margin={{ left: 12, right: 12 }}
-              >
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="day"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  tickFormatter={(value) => value.slice(0, 3)}
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent indicator="dot" />}
-                />
-                <defs>
-                  <linearGradient id="fillUsage" x1="0" y1="0" x2="0" y2="1">
-                    <stop
-                      offset="5%"
-                      stopColor="var(--color-usage)"
-                      stopOpacity={0.8}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor="var(--color-usage)"
-                      stopOpacity={0.1}
-                    />
-                  </linearGradient>
-                </defs>
-                <Area
-                  dataKey="usage"
-                  type="natural"
-                  fill="url(#fillUsage)"
-                  stroke="var(--color-usage)"
-                  stackId="a"
-                />
-              </AreaChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Quick Links</CardTitle>
-                <CardDescription>Jump to your most used pages.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-                 <Link href="/scenes" className="flex items-center justify-between p-4 transition-colors rounded-lg hover:bg-muted">
-                    <div>
-                        <h3 className="font-semibold">Manage Scenes</h3>
-                        <p className="text-sm text-muted-foreground">View and create new scenes.</p>
-                    </div>
-                    <ArrowRight className="w-5 h-5" />
-                 </Link>
-                 <Link href="/automations" className="flex items-center justify-between p-4 transition-colors rounded-lg hover:bg-muted">
-                    <div>
-                        <h3 className="font-semibold">Configure Automations</h3>
-                        <p className="text-sm text-muted-foreground">Set up rules for your home.</p>
-                    </div>
-                    <ArrowRight className="w-5 h-5" />
-                 </Link>
-                 <Link href="/system" className="flex items-center justify-between p-4 transition-colors rounded-lg hover:bg-muted">
-                    <div>
-                        <h3 className="font-semibold">Check System Status</h3>
-                        <p className="text-sm text-muted-foreground">Run diagnostics and view alerts.</p>
-                    </div>
-                    <ArrowRight className="w-5 h-5" />
-                 </Link>
-            </CardContent>
-        </Card>
+          </Card>
+        ))}
       </div>
     </div>
   );

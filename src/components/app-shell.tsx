@@ -4,14 +4,17 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Clapperboard,
+  Lightbulb,
+  LayoutDashboard,
   Home,
   Wand2,
   Zap,
-  Server,
-  UserCircle,
+  BarChart2,
+  Shield,
+  User,
   Settings,
-  LayoutDashboard,
+  UserCircle,
+  DoorOpen
 } from "lucide-react";
 
 import {
@@ -44,29 +47,34 @@ const menuItems = [
     icon: LayoutDashboard,
   },
   {
-    href: "/scenes",
-    label: "Scenes",
-    icon: Clapperboard,
-  },
-  {
     href: "/rooms",
     label: "Rooms",
     icon: Home,
   },
   {
-    href: "/automations",
-    label: "Automations",
+    href: "/scenes",
+    label: "Scenes",
     icon: Wand2,
   },
   {
-    href: "/energy",
-    label: "Energy",
+    href: "/automations",
+    label: "Automations",
     icon: Zap,
+  },
+  {
+    href: "/energy",
+    label: "Energy Monitor",
+    icon: BarChart2,
   },
   {
     href: "/system",
     label: "System Status",
-    icon: Server,
+    icon: Shield,
+  },
+  {
+    href: "/profile",
+    label: "Profile",
+    icon: User,
   },
 ];
 
@@ -78,10 +86,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar>
         <SidebarHeader className="p-4">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary">
-              <Home className="w-6 h-6 text-primary-foreground" />
+            <div className="p-2 rounded-lg bg-primary/20 text-primary">
+              <Lightbulb className="w-6 h-6" />
             </div>
-            <h1 className="text-xl font-semibold font-headline">AssistHome</h1>
+            <h1 className="text-xl font-semibold font-headline">Smart Hub</h1>
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -133,9 +141,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="flex items-center justify-between p-4 bg-background/50 backdrop-blur-sm sticky top-0 z-10 md:hidden">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-primary">
-              <Home className="w-5 h-5 text-primary-foreground" />
+              <Lightbulb className="w-5 h-5 text-primary-foreground" />
             </div>
-            <h1 className="text-lg font-semibold font-headline">AssistHome</h1>
+            <h1 className="text-lg font-semibold font-headline">Smart Hub</h1>
           </div>
           <SidebarTrigger />
         </header>

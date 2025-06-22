@@ -13,7 +13,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { Area, AreaChart, CartesianGrid, Legend, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, Legend, Line, LineChart, XAxis, YAxis } from "recharts";
 import { TrendingUp, Zap, ArrowDown, ArrowUp } from "lucide-react";
 
 const mainChartData = [
@@ -68,7 +68,7 @@ export default function EnergyPage() {
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">
-          Energy Status
+          Energy Monitor
         </h1>
         <p className="text-muted-foreground">
           Monitor your home's energy consumption.
@@ -139,7 +139,7 @@ export default function EnergyPage() {
                   axisLine={false}
                 />
                 <YAxis />
-                <Tooltip content={<ChartTooltipContent />} />
+                <ChartTooltip content={<ChartTooltipContent />} />
                 <Legend />
                 <Line type="monotone" dataKey="hvac" stroke="var(--color-hvac)" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="lighting" stroke="var(--color-lighting)" strokeWidth={2} dot={false} />
@@ -162,7 +162,7 @@ export default function EnergyPage() {
                                     <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                                 </linearGradient>
                             </defs>
-                            <Tooltip content={<SparklineTooltipContent />} cursor={false} />
+                            <ChartTooltip content={<SparklineTooltipContent />} cursor={false} />
                             <Area type="monotone" dataKey="y" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorSpark)" />
                         </AreaChart>
                     </ChartContainer>
@@ -181,7 +181,7 @@ export default function EnergyPage() {
                                     <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0}/>
                                 </linearGradient>
                             </defs>
-                            <Tooltip content={<SparklineTooltipContent />} cursor={false} />
+                            <ChartTooltip content={<SparklineTooltipContent />} cursor={false} />
                             <Area type="monotone" dataKey="y" stroke="hsl(var(--accent))" fillOpacity={1} fill="url(#colorSparkAccent)" />
                         </AreaChart>
                     </ChartContainer>

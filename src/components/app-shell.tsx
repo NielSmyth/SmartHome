@@ -161,8 +161,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       });
 
       const { audioDataUri } = await textToSpeech(speechResponse);
-      const audio = new Audio(audioDataUri);
-      audio.play();
+      if (audioDataUri) {
+        const audio = new Audio(audioDataUri);
+        audio.play();
+      }
 
     } catch (error) {
       console.error("Error processing voice command:", error);

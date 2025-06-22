@@ -1,12 +1,75 @@
-import Link from 'next/link';
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Home, Shield } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Home, Shield } from 'lucide-react';
+
+const signInSchema = z.object({
+  email: z.string().email({ message: 'Invalid email address.' }),
+  password: z.string().min(1, { message: 'Password is required.' }),
+});
+
+const signUpSchema = z.object({
+  name: z.string().min(1, { message: 'Name is required.' }),
+  email: z.string().email({ message: 'Invalid email address.' }),
+  password: z
+    .string()
+    .min(8, { message: 'Password must be at least 8 characters.' }),
+});
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  const signInForm = useForm<z.infer<typeof signInSchema>>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const signUpForm = useForm<z.infer<typeof signUpSchema>>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+    },
+  });
+
+  function onSignInSubmit(values: z.infer<typeof signInSchema>) {
+    // In a real app, you'd handle authentication here.
+    console.log('Sign In:', values);
+    router.push('/dashboard');
+  }
+
+  function onSignUpSubmit(values: z.infer<typeof signUpSchema>) {
+    // In a real app, you'd handle user creation here.
+    console.log('Sign Up:', values);
+    router.push('/dashboard');
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white p-4">
       <div className="text-center mb-8">
@@ -32,76 +95,137 @@ export default function LoginPage() {
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-slate-900/60 border-slate-700 border">
-              <TabsTrigger value="signin" className="data-[state=active]:bg-slate-950 data-[state=active]:text-white">
+              <TabsTrigger
+                value="signin"
+                className="data-[state=active]:bg-slate-950 data-[state=active]:text-white"
+              >
                 Sign In
               </TabsTrigger>
-              <TabsTrigger value="signup" className="data-[state=active]:bg-slate-950 data-[state=active]:text-white">
+              <TabsTrigger
+                value="signup"
+                className="data-[state=active]:bg-slate-950 data-[state=active]:text-white"
+              >
                 Sign Up
               </TabsTrigger>
             </TabsList>
             <TabsContent value="signin" className="mt-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email-signin">Email</Label>
-                  <Input
-                    id="email-signin"
-                    type="email"
-                    placeholder="Enter your email"
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
-                    required
+              <Form {...signInForm}>
+                <form
+                  onSubmit={signInForm.handleSubmit(onSignInSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={signInForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="Enter your email"
+                            className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password-signin">Password</Label>
-                  <Input
-                    id="password-signin"
-                    type="password"
-                    placeholder="Enter your password"
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
-                    required
+                  <FormField
+                    control={signInForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Enter your password"
+                            className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" asChild>
-                  <Link href="/dashboard">Sign In</Link>
-                </Button>
-              </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    Sign In
+                  </Button>
+                </form>
+              </Form>
             </TabsContent>
             <TabsContent value="signup" className="mt-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name-signup">Name</Label>
-                  <Input
-                    id="name-signup"
-                    type="text"
-                    placeholder="Enter your name"
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
-                    required
+              <Form {...signUpForm}>
+                <form
+                  onSubmit={signUpForm.handleSubmit(onSignUpSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={signUpForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter your name"
+                            className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email-signup">Email</Label>
-                  <Input
-                    id="email-signup"
-                    type="email"
-                    placeholder="Enter your email"
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
-                    required
+                  <FormField
+                    control={signUpForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="Enter your email"
+                            className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password-signup">Password</Label>
-                  <Input
-                    id="password-signup"
-                    type="password"
-                    placeholder="Create a password"
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
-                    required
+                  <FormField
+                    control={signUpForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Create a password"
+                            className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" asChild>
-                  <Link href="/dashboard">Sign Up</Link>
-                </Button>
-              </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    Sign Up
+                  </Button>
+                </form>
+              </Form>
             </TabsContent>
           </Tabs>
         </CardContent>

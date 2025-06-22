@@ -1,17 +1,81 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Flame, Lightbulb, Snowflake } from "lucide-react";
+import {
+  Flame,
+  Lightbulb,
+  Camera,
+  Lock,
+  AirVent,
+  Lamp,
+  DoorOpen,
+  Bell,
+  LightbulbOff,
+} from "lucide-react";
 
 const rooms = [
-  { name: "Living Room", lights: true, temp: 22 },
-  { name: "Bedroom", lights: false, temp: 20 },
-  { name: "Kitchen", lights: true, temp: 21 },
-  { name: "Office", lights: true, temp: 23 },
+  {
+    name: "Living Room",
+    temp: 22,
+    lightsOn: 1,
+    lightsTotal: 2,
+    devices: [
+      { name: "Main Lights", type: "Light", icon: Lightbulb, active: true },
+      { name: "Accent Lights", type: "Light", icon: Lamp, active: false },
+      { name: "Security Camera", type: "Camera", icon: Camera, active: true },
+      { name: "AC Unit", type: "AC", icon: AirVent, active: false },
+    ],
+  },
+  {
+    name: "Kitchen",
+    temp: 24,
+    lightsOn: 2,
+    lightsTotal: 2,
+    devices: [
+      { name: "Ceiling Lights", type: "Light", icon: Lightbulb, active: true },
+      { name: "Under Cabinet", type: "Light", icon: Lamp, active: true },
+      { name: "Kitchen Camera", type: "Camera", icon: Camera, active: false },
+    ],
+  },
+  {
+    name: "Bedroom",
+    temp: 20,
+    lightsOn: 1,
+    lightsTotal: 2,
+    devices: [
+      { name: "Main Light", type: "Light", icon: Lightbulb, active: false },
+      { name: "Bedside Lamp", type: "Light", icon: Lamp, active: true },
+      { name: "Door Lock", type: "Door", icon: Lock, active: true },
+      { name: "AC Unit", type: "AC", icon: AirVent, active: false },
+    ],
+  },
+  {
+    name: "Entrance",
+    temp: 23,
+    lightsOn: 1,
+    lightsTotal: 1,
+    devices: [
+      { name: "Entrance Light", type: "Light", icon: Lightbulb, active: true },
+      { name: "Front Door", type: "Door", icon: DoorOpen, active: false },
+      { name: "Doorbell Camera", type: "Camera", icon: Bell, active: false },
+    ],
+  },
 ];
+
+const DeviceItem = ({ device }: { device: (typeof rooms)[0]['devices'][0] }) => (
+  <div className="flex items-center justify-between p-3 rounded-lg bg-secondary">
+    <div className="flex items-center gap-3">
+      <device.icon className="w-5 h-5 text-primary" />
+      <div>
+        <p className="font-semibold">{device.name}</p>
+        <p className="text-xs text-muted-foreground">{device.type}</p>
+      </div>
+    </div>
+    <Switch defaultChecked={device.active} />
+  </div>
+);
 
 export default function RoomsPage() {
   return (
@@ -22,43 +86,37 @@ export default function RoomsPage() {
           Manage the devices in each of your rooms.
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+
+      <div className="flex flex-col gap-12">
         {rooms.map((room) => (
-          <Card key={room.name}>
-            <CardHeader>
-              <CardTitle>{room.name}</CardTitle>
-              <CardDescription>Control lights and climate.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <Label htmlFor={`lights-${room.name}`} className="flex items-center gap-2">
-                  <Lightbulb className="w-5 h-5" />
-                  <span>Lights</span>
-                </Label>
-                <Switch id={`lights-${room.name}`} defaultChecked={room.lights} />
-              </div>
-              <div className="space-y-3">
-                 <Label htmlFor={`temp-${room.name}`} className="flex items-center justify-between">
-                   <span className="flex items-center gap-2">
-                    <Flame className="w-5 h-5" />
-                    <span>Temperature</span>
-                   </span>
-                   <span className="font-medium">{room.temp}°C</span>
-                </Label>
-                <div className="flex items-center gap-4">
-                    <Snowflake className="text-muted-foreground" />
-                    <Slider
-                    id={`temp-${room.name}`}
-                    defaultValue={[room.temp]}
-                    min={15}
-                    max={30}
-                    step={1}
-                    />
-                    <Flame className="text-muted-foreground" />
+          <div key={room.name} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-4">
+                <h2 className="text-2xl font-bold">{room.name}</h2>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Flame className="w-5 h-5" />
+                  <span>{room.temp}°C</span>
                 </div>
+                <Badge variant="secondary">{`${room.lightsOn}/${room.lightsTotal} lights on`}</Badge>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  <Lightbulb />
+                  All Lights On
+                </Button>
+                <Button variant="outline" size="sm">
+                  <LightbulbOff />
+                  All Lights Off
+                </Button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {room.devices.map((device) => (
+                <DeviceItem key={device.name} device={device} />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>

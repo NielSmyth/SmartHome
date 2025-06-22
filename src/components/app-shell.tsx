@@ -108,7 +108,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               Smart Hub
             </h1>
           </div>
-          <SidebarTrigger className="hidden md:flex" />
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
@@ -197,14 +196,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex items-center justify-between p-4 bg-background/50 backdrop-blur-sm sticky top-0 z-10 md:hidden">
+        <header className="flex items-center justify-between p-4 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-primary">
-              <Lightbulb className="w-5 h-5 text-primary-foreground" />
+            <SidebarTrigger className="hidden md:flex" />
+            <div className="flex items-center gap-2 md:hidden">
+              <div className="p-1.5 rounded-lg bg-primary">
+                <Lightbulb className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <h1 className="text-lg font-semibold font-headline">Smart Hub</h1>
             </div>
-            <h1 className="text-lg font-semibold font-headline">Smart Hub</h1>
           </div>
-          <SidebarTrigger />
+          <SidebarTrigger className="md:hidden" />
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
       </SidebarInset>

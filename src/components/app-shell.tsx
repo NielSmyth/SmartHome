@@ -19,6 +19,7 @@ import {
   Moon,
   Sun,
   Laptop,
+  Bell,
 } from "lucide-react";
 
 import {
@@ -43,6 +44,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const menuItems = [
   {
@@ -194,6 +196,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuItem onClick={() => setTheme("system")}>
                   <Laptop className="mr-2 h-4 w-4" />
                   <span>System</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-[1.2rem] w-[1.2rem]" />
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 justify-center rounded-full p-0 text-xs">2</Badge>
+                  <span className="sr-only">Toggle notifications</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="flex flex-col items-start gap-1 py-2">
+                  <p className="font-medium">System Alert: Anomaly Detected</p>
+                  <p className="text-xs text-muted-foreground">Unusual energy spike from Kitchen. - 5m ago</p>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="flex flex-col items-start gap-1 py-2">
+                  <p className="font-medium">Automation: Good Night Triggered</p>
+                  <p className="text-xs text-muted-foreground">All lights turned off and doors locked. - 2h ago</p>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                 <DropdownMenuItem asChild>
+                  <Button variant="link" className="w-full h-8 mt-1">View all notifications</Button>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
   Lightbulb,
   LayoutDashboard,
@@ -15,6 +16,9 @@ import {
   Settings,
   UserCircle,
   DoorOpen,
+  Moon,
+  Sun,
+  Laptop,
 } from "lucide-react";
 
 import {
@@ -37,6 +41,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
@@ -81,6 +89,7 @@ const menuItems = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { setTheme } = useTheme();
 
   const handleLogout = () => {
     // In a real app, you would clear session/token here
@@ -90,13 +99,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarHeader className="p-4">
+        <SidebarHeader className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-primary/20 text-primary">
               <Lightbulb className="w-6 h-6" />
             </div>
-            <h1 className="text-xl font-semibold font-headline">Smart Hub</h1>
+            <h1 className="text-xl font-semibold font-headline group-data-[state=collapsed]:hidden">
+              Smart Hub
+            </h1>
           </div>
+          <SidebarTrigger className="hidden md:flex" />
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
@@ -109,7 +121,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 >
                   <Link href={item.href}>
                     <item.icon />
-                    <span>{item.label}</span>
+                    <span className="group-data-[state=collapsed]:hidden">
+                      {item.label}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -133,7 +147,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <UserCircle />
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-base">User</span>
+                <span className="text-base group-data-[state=collapsed]:hidden">
+                  User
+                </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -149,6 +165,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <span>Settings</span>
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Sun className="mr-2" />
+                  <span>Theme</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setTheme("light")}>
+                      <Sun className="mr-2" />
+                      <span>Light</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("dark")}>
+                      <Moon className="mr-2" />
+                      <span>Dark</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("system")}>
+                      <Laptop className="mr-2" />
+                      <span>System</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <DoorOpen className="mr-2" />

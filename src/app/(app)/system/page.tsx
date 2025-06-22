@@ -9,6 +9,7 @@ import {
   Server,
   Thermometer,
   Wifi,
+  Zap,
 } from "lucide-react";
 
 import { analyzeSystemStatus, SystemStatusOutput } from "@/ai/flows/system-status-alerts";
@@ -128,7 +129,7 @@ export default function SystemStatusPage() {
           )}
           <AlertTitle>
             {analysis.hasAnomalies ? "Anomalies Detected" : "System Healthy"}
-          </Aler tTitle>
+          </AlertTitle>
           <AlertDescription>
             {analysis.anomalyExplanation}
           </AlertDescription>

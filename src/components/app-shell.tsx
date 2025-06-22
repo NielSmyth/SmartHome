@@ -20,6 +20,8 @@ import {
   Sun,
   Laptop,
   Bell,
+  Microphone,
+  Loader,
 } from "lucide-react";
 
 import {
@@ -45,6 +47,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
+import { useAppContext } from "@/context/app-state-context";
+import { parseVoiceCommand } from "@/ai/flows/voice-command-flow";
+import { textToSpeech } from "@/ai/flows/text-to-speech-flow";
+import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
   {
@@ -88,10 +95,101 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { setTheme } = useTheme();
+  const { toast } = useToast();
+
+  const {
+    devices,
+    scenes,
+    automations,
+    handleDeviceToggle,
+    handleActivateScene,
+    handleAutomationToggle,
+  } = useAppContext();
+
+  const [isProcessingVoice, setIsProcessingVoice] = React.useState(false);
+
+  const onVoiceResult = async (transcript: string) => {
+    if (!transcript) return;
+
+    setIsProcessingVoice(true);
+    toast({
+      title: "Processing Command...",
+      description: `"${transcript}"`,
+    });
+
+    try {
+      const deviceNames = devices.map((d) => d.name);
+      const sceneNames = scenes.map((s) => s.name);
+      const automationNames = automations.map((a) => a.name);
+
+      const result = await parseVoiceCommand({
+        command: transcript,
+        devices: deviceNames,
+        scenes: sceneNames,
+        automations: automationNames,
+      });
+
+      let actionTaken = false;
+
+      switch (result.action) {
+        case "device":
+          const device = devices.find((d) => d.name === result.target);
+          if (device) {
+            handleDeviceToggle(result.target);
+            actionTaken = true;
+          }
+          break;
+        case "scene":
+          handleActivateScene(result.target);
+          actionTaken = true;
+          break;
+        case "automation":
+          handleAutomationToggle(result.target, result.value);
+          actionTaken = true;
+          break;
+        case "navigation":
+          router.push(`/${result.target.toLowerCase()}`);
+          actionTaken = true;
+          break;
+      }
+      
+      const speechResponse = actionTaken ? result.speechResponse : `Sorry, I couldn't find the ${result.target}.`;
+
+      toast({
+        title: actionTaken ? "Command Executed" : "Command Failed",
+        description: speechResponse,
+      });
+
+      const { audioDataUri } = await textToSpeech(speechResponse);
+      const audio = new Audio(audioDataUri);
+      audio.play();
+
+    } catch (error) {
+      console.error("Error processing voice command:", error);
+      toast({
+        title: "Error",
+        description: "Sorry, I couldn't process that command.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingVoice(false);
+    }
+  };
+
+  const { isListening, transcript, start, stop, supported } = useSpeechRecognition({
+    onResult: onVoiceResult,
+  });
 
   const handleLogout = () => {
-    // In a real app, you would clear session/token here
     router.push("/login");
+  };
+
+  const handleVoiceButtonClick = () => {
+    if (isListening) {
+      stop();
+    } else {
+      start();
+    }
   };
 
   return (
@@ -176,6 +274,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {supported && (
+               <Button variant="ghost" size="icon" onClick={handleVoiceButtonClick} disabled={isProcessingVoice}>
+                {isProcessingVoice ? <Loader className="h-[1.2rem] w-[1.2rem] animate-spin" /> : (isListening ? <Loader className="h-[1.2rem] w-[1.2rem] animate-pulse text-red-500" /> : <Microphone className="h-[1.2rem] w-[1.2rem]" />) }
+                <span className="sr-only">Voice Command</span>
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">

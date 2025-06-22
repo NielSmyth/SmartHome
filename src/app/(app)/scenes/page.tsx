@@ -5,15 +5,11 @@ import {
   BrainCircuit,
   Lightbulb,
   Plus,
-  Sunrise,
-  Sunset,
-  Tv,
 } from "lucide-react";
 import {
   suggestScenes,
   SuggestedScenesOutput,
 } from "@/ai/flows/suggested-scenes";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,29 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-const initialScenes = [
-  {
-    name: "Good Morning",
-    icon: Sunrise,
-    description: "Gradually brighten lights and start your day.",
-  },
-  {
-    name: "Movie Night",
-    icon: Tv,
-    description: "Dim the lights and set the mood for a movie.",
-  },
-  {
-    name: "Focus Time",
-    icon: BrainCircuit,
-    description: "Bright, cool lighting to help you concentrate.",
-  },
-  {
-    name: "Good Night",
-    icon: Sunset,
-    description: "Turn off all lights and secure the house.",
-  },
-];
+import { useAppContext } from "@/context/app-state-context";
 
 const pastActions = [
   "User turned on living room lights at 8:00 AM.",
@@ -68,7 +42,7 @@ const pastActions = [
 ];
 
 export default function ScenesPage() {
-  const [scenes, setScenes] = React.useState(initialScenes);
+  const { scenes, handleActivateScene, handleCreateScene } = useAppContext();
   const [suggestedScenes, setSuggestedScenes] =
     React.useState<SuggestedScenesOutput | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -96,14 +70,7 @@ export default function ScenesPage() {
     }
   };
 
-  const handleActivateScene = (sceneName: string) => {
-    toast({
-      title: "Scene Activated",
-      description: `The "${sceneName}" scene has been activated.`,
-    });
-  };
-
-  const handleCreateScene = () => {
+  const onCreateScene = () => {
     if (!newSceneName || !newSceneDescription) {
       toast({
         title: "Error",
@@ -112,20 +79,10 @@ export default function ScenesPage() {
       });
       return;
     }
-
-    const newScene = {
-      name: newSceneName,
-      description: newSceneDescription,
-      icon: Lightbulb, // Default icon
-    };
-    setScenes([...scenes, newScene]);
+    handleCreateScene(newSceneName, newSceneDescription);
     setCreateDialogOpen(false);
     setNewSceneName("");
     setNewSceneDescription("");
-    toast({
-      title: "Scene Created",
-      description: `The "${newSceneName}" scene has been created.`,
-    });
   };
 
   return (
@@ -215,7 +172,7 @@ export default function ScenesPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" onClick={handleCreateScene}>
+                <Button type="submit" onClick={onCreateScene}>
                   Create Scene
                 </Button>
               </DialogFooter>

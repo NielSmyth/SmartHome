@@ -14,68 +14,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Clock, Plus, Sparkles, Wind } from "lucide-react";
-
-const initialAutomations = [
-  {
-    icon: Clock,
-    name: "Morning Routine",
-    description: "Turn on lights when motion detected after 6 AM",
-    trigger: "Motion + Time",
-    action: "Turn on lights",
-    status: "Active",
-    lastRun: "This morning",
-    active: true,
-  },
-  {
-    icon: Sparkles,
-    name: "Energy Saver",
-    description: "Turn off lights when no motion for 10 minutes",
-    trigger: "No motion",
-    action: "Turn off lights",
-    status: "Active",
-    lastRun: "2 hours ago",
-    active: true,
-  },
-  {
-    icon: Clock,
-    name: "Security Mode",
-    description: "Lock doors and arm cameras at 11 PM",
-    trigger: "11:00 PM",
-    action: "Lock & Arm",
-    status: "Paused",
-    lastRun: "Yesterday",
-    active: false,
-  },
-  {
-    icon: Wind,
-    name: "Climate Control",
-    description: "Adjust temperature based on occupancy",
-    trigger: "Occupancy change",
-    action: "Adjust AC",
-    status: "Active",
-    lastRun: "1 hour ago",
-    active: true,
-  },
-];
+import { useAppContext } from "@/context/app-state-context";
 
 export default function AutomationsPage() {
-  const [automations, setAutomations] = React.useState(initialAutomations);
-
-  const handleAutomationToggle = (automationName: string) => {
-    setAutomations(
-      automations.map((auto) => {
-        if (auto.name === automationName) {
-          const newActiveState = !auto.active;
-          return {
-            ...auto,
-            active: newActiveState,
-            status: newActiveState ? "Active" : "Paused",
-          };
-        }
-        return auto;
-      })
-    );
-  };
+  const { automations, handleAutomationToggle } = useAppContext();
 
   return (
     <div className="flex flex-col gap-8">

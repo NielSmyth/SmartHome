@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Lightbulb,
   LayoutDashboard,
@@ -14,7 +14,7 @@ import {
   User,
   Settings,
   UserCircle,
-  DoorOpen
+  DoorOpen,
 } from "lucide-react";
 
 import {
@@ -80,6 +80,12 @@ const menuItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    // In a real app, you would clear session/token here
+    router.push("/login");
+  };
 
   return (
     <SidebarProvider>
@@ -113,9 +119,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarFooter className="p-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="justify-start w-full gap-2 px-2 h-11">
+              <Button
+                variant="ghost"
+                className="justify-start w-full gap-2 px-2 h-11"
+              >
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="user avatar" />
+                  <AvatarImage
+                    src="https://placehold.co/40x40.png"
+                    alt="User Avatar"
+                    data-ai-hint="user avatar"
+                  />
                   <AvatarFallback>
                     <UserCircle />
                   </AvatarFallback>
@@ -123,14 +136,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="text-base">User</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
+            <DropdownMenuContent
+              className="w-56 mb-2"
+              side="top"
+              align="start"
+            >
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Settings className="mr-2" />
-                <span>Settings</span>
+              <DropdownMenuItem asChild>
+                <Link href="/profile">
+                  <Settings className="mr-2" />
+                  <span>Settings</span>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <DoorOpen className="mr-2" />
                 <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>

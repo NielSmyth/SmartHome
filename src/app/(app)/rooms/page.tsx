@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -15,7 +16,7 @@ import {
   LightbulbOff,
 } from "lucide-react";
 
-const rooms = [
+const initialRooms = [
   {
     name: "Living Room",
     temp: 22,
@@ -64,7 +65,13 @@ const rooms = [
   },
 ];
 
-const DeviceItem = ({ device }: { device: (typeof rooms)[0]['devices'][0] }) => (
+const DeviceItem = ({
+  device,
+  onToggle,
+}: {
+  device: (typeof initialRooms)[0]["devices"][0];
+  onToggle: () => void;
+}) => (
   <div className="flex items-center justify-between p-3 rounded-lg bg-secondary">
     <div className="flex items-center gap-3">
       <device.icon className="w-5 h-5 text-primary" />
@@ -73,15 +80,62 @@ const DeviceItem = ({ device }: { device: (typeof rooms)[0]['devices'][0] }) => 
         <p className="text-xs text-muted-foreground">{device.type}</p>
       </div>
     </div>
-    <Switch defaultChecked={device.active} />
+    <Switch checked={device.active} onCheckedChange={onToggle} />
   </div>
 );
 
 export default function RoomsPage() {
+  const [rooms, setRooms] = React.useState(initialRooms);
+
+  const handleDeviceToggle = (roomName: string, deviceName: string) => {
+    setRooms(
+      rooms.map((room) => {
+        if (room.name === roomName) {
+          const newDevices = room.devices.map((device) => {
+            if (device.name === deviceName) {
+              return { ...device, active: !device.active };
+            }
+            return device;
+          });
+
+          const newLightsOn = newDevices.filter(
+            (d) => d.type === "Light" && d.active
+          ).length;
+
+          return { ...room, devices: newDevices, lightsOn: newLightsOn };
+        }
+        return room;
+      })
+    );
+  };
+
+  const handleAllLights = (roomName: string, turnOn: boolean) => {
+    setRooms(
+      rooms.map((room) => {
+        if (room.name === roomName) {
+          const newDevices = room.devices.map((device) => {
+            if (device.type === "Light") {
+              return { ...device, active: turnOn };
+            }
+            return device;
+          });
+
+          const newLightsOn = newDevices.filter(
+            (d) => d.type === "Light" && d.active
+          ).length;
+          return { ...room, devices: newDevices, lightsOn: newLightsOn };
+        }
+        return room;
+      })
+    );
+  };
+
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">Rooms</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">
+          Rooms
+        </h1>
         <p className="text-muted-foreground">
           Manage the devices in each of your rooms.
         </p>
@@ -100,20 +154,32 @@ export default function RoomsPage() {
                 <Badge variant="secondary">{`${room.lightsOn}/${room.lightsTotal} lights on`}</Badge>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAllLights(room.name, true)}
+                >
                   <Lightbulb />
                   All Lights On
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAllLights(room.name, false)}
+                >
                   <LightbulbOff />
                   All Lights Off
                 </Button>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {room.devices.map((device) => (
-                <DeviceItem key={device.name} device={device} />
+                <DeviceItem
+                  key={device.name}
+                  device={device}
+                  onToggle={() => handleDeviceToggle(room.name, device.name)}
+                />
               ))}
             </div>
           </div>

@@ -9,7 +9,10 @@ import {
   Sunset,
   Tv,
 } from "lucide-react";
-import { suggestScenes, SuggestedScenesOutput } from "@/ai/flows/suggested-scenes";
+import {
+  suggestScenes,
+  SuggestedScenesOutput,
+} from "@/ai/flows/suggested-scenes";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,15 +26,18 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
-const scenes = [
+const initialScenes = [
   {
     name: "Good Morning",
     icon: Sunrise,
@@ -62,9 +68,15 @@ const pastActions = [
 ];
 
 export default function ScenesPage() {
-  const [suggestedScenes, setSuggestedScenes] = React.useState<SuggestedScenesOutput | null>(null);
+  const [scenes, setScenes] = React.useState(initialScenes);
+  const [suggestedScenes, setSuggestedScenes] =
+    React.useState<SuggestedScenesOutput | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
+
+  const [isCreateDialogOpen, setCreateDialogOpen] = React.useState(false);
+  const [newSceneName, setNewSceneName] = React.useState("");
+  const [newSceneDescription, setNewSceneDescription] = React.useState("");
 
   const handleSuggestScenes = async () => {
     setIsLoading(true);
@@ -82,6 +94,38 @@ export default function ScenesPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleActivateScene = (sceneName: string) => {
+    toast({
+      title: "Scene Activated",
+      description: `The "${sceneName}" scene has been activated.`,
+    });
+  };
+
+  const handleCreateScene = () => {
+    if (!newSceneName || !newSceneDescription) {
+      toast({
+        title: "Error",
+        description: "Please provide a name and description for the scene.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newScene = {
+      name: newSceneName,
+      description: newSceneDescription,
+      icon: Lightbulb, // Default icon
+    };
+    setScenes([...scenes, newScene]);
+    setCreateDialogOpen(false);
+    setNewSceneName("");
+    setNewSceneDescription("");
+    toast({
+      title: "Scene Created",
+      description: `The "${newSceneName}" scene has been created.`,
+    });
   };
 
   return (
@@ -132,10 +176,51 @@ export default function ScenesPage() {
               </div>
             </DialogContent>
           </Dialog>
-          <Button>
-            <Plus />
-            Create Scene
-          </Button>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus />
+                Create Scene
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Scene</DialogTitle>
+                <DialogDescription>
+                  Configure a new scene to control multiple devices at once.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">
+                    Name
+                  </Label>
+                  <Input
+                    id="name"
+                    value={newSceneName}
+                    onChange={(e) => setNewSceneName(e.target.value)}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="description" className="text-right">
+                    Description
+                  </Label>
+                  <Textarea
+                    id="description"
+                    value={newSceneDescription}
+                    onChange={(e) => setNewSceneDescription(e.target.value)}
+                    className="col-span-3"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" onClick={handleCreateScene}>
+                  Create Scene
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -152,7 +237,12 @@ export default function ScenesPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <Button className="w-full">Activate</Button>
+              <Button
+                className="w-full"
+                onClick={() => handleActivateScene(scene.name)}
+              >
+                Activate
+              </Button>
             </CardContent>
           </Card>
         ))}

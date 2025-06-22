@@ -98,11 +98,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader className="p-4 flex items-center justify-between">
+      <Sidebar collapsible="icon">
+        <SidebarHeader className="p-4 flex items-center justify-between group-data-[state=collapsed]:p-2 group-data-[state=collapsed]:justify-center">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-primary/20 text-primary">
-              <Lightbulb className="w-6 h-6" />
+              <Lightbulb className="w-6 h-6 group-data-[state=collapsed]:w-4 group-data-[state=collapsed]:h-4" />
             </div>
             <h1 className="text-xl font-semibold font-headline group-data-[state=collapsed]:hidden">
               Smart Hub
@@ -129,12 +129,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter className="p-4">
+        <SidebarFooter className="p-4 group-data-[state=collapsed]:p-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="justify-start w-full gap-2 px-2 h-11"
+                className="justify-start w-full gap-2 px-2 h-11 group-data-[state=collapsed]:justify-center"
               >
                 <Avatar className="w-8 h-8">
                   <AvatarImage

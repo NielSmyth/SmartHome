@@ -9,6 +9,9 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import wav from 'wav';
 
+// In-memory cache for TTS results
+const ttsCache = new Map<string, string>();
+
 async function toWav(
   pcmData: Buffer,
   channels = 1,
@@ -45,6 +48,11 @@ const textToSpeechFlow = ai.defineFlow(
     }),
   },
   async (text) => {
+    // Check cache first
+    if (ttsCache.has(text)) {
+      return { audioDataUri: ttsCache.get(text)! };
+    }
+
     try {
       const {media} = await ai.generate({
         model: 'googleai/gemini-2.5-flash-preview-tts',
@@ -69,9 +77,13 @@ const textToSpeechFlow = ai.defineFlow(
         'base64'
       );
       const wavBase64 = await toWav(audioBuffer);
+      const audioDataUri = `data:audio/wav;base64,${wavBase64}`;
+
+      // Store in cache
+      ttsCache.set(text, audioDataUri);
 
       return {
-        audioDataUri: `data:audio/wav;base64,${wavBase64}`,
+        audioDataUri,
       };
     } catch (error) {
         console.error("Error during text-to-speech generation:", error);

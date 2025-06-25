@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Link from 'next/link';
+import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -36,6 +37,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAppContext();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const signInForm = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
@@ -45,20 +47,19 @@ export default function LoginPage() {
     },
   });
 
-  function onSignInSubmit(values: z.infer<typeof signInSchema>) {
-    // Dev login logic
-    if (values.email === 'admin@example.com' && values.password === 'adminpassword') {
-      login('admin');
+  async function onSignInSubmit(values: z.infer<typeof signInSchema>) {
+    setIsLoading(true);
+    try {
+      await login(values.email, values.password);
       router.push('/dashboard');
-    } else if (values.email === 'user@example.com' && values.password === 'password123') {
-      login('user');
-      router.push('/dashboard');
-    } else {
+    } catch (error: any) {
       toast({
-        title: "Invalid Credentials",
-        description: "Please check your email and password.",
+        title: "Login Failed",
+        description: error.message || "Please check your email and password.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -79,13 +80,9 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md bg-slate-800/50 border-slate-700 text-white">
         <CardHeader>
-          <CardTitle className="text-2xl">Welcome!</CardTitle>
-           <CardDescription className="text-slate-400 pt-2">
-            Use these credentials for development access:
-            <ul className="list-disc pl-5 mt-2 text-slate-300">
-              <li><b>Admin:</b> admin@example.com / adminpassword</li>
-              <li><b>User:</b> user@example.com / password123</li>
-            </ul>
+          <CardTitle className="text-2xl">Welcome Back!</CardTitle>
+          <CardDescription className="text-slate-400 pt-2">
+            Enter your credentials to access your dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -133,8 +130,9 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={isLoading}
               >
-                Sign In
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
             </form>
           </Form>

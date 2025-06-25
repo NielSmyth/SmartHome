@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -72,6 +73,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const {
+    user,
+    authLoading,
     devices,
     scenes,
     automations,
@@ -83,6 +86,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   } = useAppContext();
 
   const [isProcessingVoice, setIsProcessingVoice] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   const onVoiceResult = async (transcript: string) => {
     if (!transcript) return;
@@ -175,6 +184,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   const allMenuItems = isAdmin ? [...menuItems, adminMenuItem] : menuItems;
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex items-center justify-center h-screen w-full">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>

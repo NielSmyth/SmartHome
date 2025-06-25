@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useToast } from "@/hooks/use-toast";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import {
   collection,
   onSnapshot,
@@ -13,7 +13,16 @@ import {
   getDocs,
   writeBatch,
   deleteDoc,
+  getDoc,
+  setDoc,
 } from "firebase/firestore";
+import {
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  type User as FirebaseUser,
+} from "firebase/auth";
 import {
   AirVent,
   Bell,
@@ -26,6 +35,7 @@ import {
   Lightbulb,
   LightbulbOff,
   Lock,
+  Loader,
   Sparkles,
   Sunrise,
   Sunset,
@@ -36,6 +46,15 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 // Types
+export interface UserProfile {
+  uid: string;
+  email: string;
+  name: string;
+  role: 'user' | 'admin';
+  address?: string;
+  phone?: string;
+}
+
 export interface Device {
   id: string;
   name: string;
@@ -99,6 +118,9 @@ export interface NewAutomationData {
 }
 
 interface AppState {
+  user: FirebaseUser | null;
+  userProfile: UserProfile | null;
+  authLoading: boolean;
   devices: Device[];
   rooms: Room[];
   scenes: Scene[];
@@ -115,8 +137,10 @@ interface AppState {
   handleUpdateDevice: (id: string, data: Partial<NewDeviceData>) => void;
   handleDeleteDevice: (id: string) => void;
   isAdmin: boolean;
-  login: (role: 'user' | 'admin') => void;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  signUp: (fullName: string, email: string, password: string) => Promise<void>;
+  notConfiguredError: () => Promise<never>;
 }
 
 // Icon Map
@@ -167,48 +191,61 @@ const initialAutomations = [
   { iconName: 'Wind', name: "Climate Control", description: "Adjust temperature based on occupancy", trigger: "Occupancy change", action: "Adjust AC", status: "Active", lastRun: "1 hour ago", active: true, },
 ];
 
-
 export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [devices, setDevices] = React.useState<Device[]>([]);
   const [rooms, setRooms] = React.useState<Room[]>([]);
   const [scenes, setScenes] = React.useState<Scene[]>([]);
   const [automations, setAutomations] = React.useState<Automation[]>([]);
+  
+  const [user, setUser] = React.useState<FirebaseUser | null>(null);
+  const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
   const [isAdmin, setIsAdmin] = React.useState(false);
-
+  const [authLoading, setAuthLoading] = React.useState(true);
+  
   const { toast } = useToast();
+  
+  const notConfiguredError = () => {
+    const err = new Error("Firebase is not configured. Please add your project credentials to the .env file.");
+    return Promise.reject(err);
+  };
+  
+  React.useEffect(() => {
+    if (!auth || !db) {
+      setAuthLoading(false);
+      return;
+    }
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setUser(user);
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const profile = userDoc.data() as UserProfile;
+          setUserProfile(profile);
+          setIsAdmin(profile.role === 'admin');
+        } else {
+          // This case might happen if user exists in Auth but not Firestore, e.g., deleted user
+          setUserProfile(null);
+          setIsAdmin(false);
+        }
+      } else {
+        setUserProfile(null);
+        setIsAdmin(false);
+      }
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, [auth, db]);
+
 
   React.useEffect(() => {
-    const seedDatabase = async () => {
-      try {
-        const collections = ['devices', 'rooms', 'scenes', 'automations'];
-        let shouldSeed = false;
-
-        for (const coll of collections) {
-          const snapshot = await getDocs(collection(db, coll));
-          if (snapshot.empty) {
-            shouldSeed = true;
-            break;
-          }
-        }
-        
-        if (shouldSeed) {
-          console.log("Empty database detected, seeding with initial data...");
-          const batch = writeBatch(db);
-          
-          initialDevices.forEach(item => batch.set(doc(collection(db, "devices")), item));
-          initialRooms.forEach(item => batch.set(doc(collection(db, "rooms")), item));
-          initialScenes.forEach(item => batch.set(doc(collection(db, "scenes")), item));
-          initialAutomations.forEach(item => batch.set(doc(collection(db, "automations")), item));
-
-          await batch.commit();
-          toast({ title: "Database seeded", description: "Initial data has been loaded." });
-        }
-      } catch (error) {
-        console.error("Error seeding database:", error);
-        toast({ title: "Error", description: "Could not seed the database.", variant: "destructive" });
-      }
-    };
-    seedDatabase();
+    if (!user || !db) {
+      setDevices([]);
+      setRooms([]);
+      setScenes([]);
+      setAutomations([]);
+      return;
+    }
 
     const unsubDevices = onSnapshot(collection(db, "devices"), (snapshot) => {
       setDevices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Device)));
@@ -229,9 +266,29 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       unsubScenes();
       unsubAutomations();
     };
-  }, [toast]);
+  }, [user, db]);
+
+  const seedDatabase = async () => {
+      if (!db) return;
+      try {
+        console.log("Seeding database with initial data...");
+        const batch = writeBatch(db);
+        
+        initialDevices.forEach(item => batch.set(doc(collection(db, "devices")), item));
+        initialRooms.forEach(item => batch.set(doc(collection(db, "rooms")), item));
+        initialScenes.forEach(item => batch.set(doc(collection(db, "scenes")), item));
+        initialAutomations.forEach(item => batch.set(doc(collection(db, "automations")), item));
+
+        await batch.commit();
+        toast({ title: "Welcome, Admin!", description: "Your dashboard has been populated with sample data." });
+      } catch (error) {
+        console.error("Error seeding database:", error);
+        toast({ title: "Error", description: "Could not seed the database.", variant: "destructive" });
+      }
+    };
 
   const handleDeviceToggle = async (deviceId: string) => {
+    if (!db) return;
     const deviceRef = doc(db, "devices", deviceId);
     const device = devices.find(d => d.id === deviceId);
     if (!device) return;
@@ -273,6 +330,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const handleCreateScene = async (name: string, description: string) => {
+    if (!db) return;
     const newScene = {
       name,
       description,
@@ -286,6 +344,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const handleAutomationToggle = async (automationId: string, forceState?: boolean) => {
+    if (!db) return;
     const autoRef = doc(db, "automations", automationId);
     const auto = automations.find(a => a.id === automationId);
     if (!auto) return;
@@ -295,6 +354,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const handleCreateAutomation = async (data: NewAutomationData) => {
+    if (!db) return;
     const newAutomation = {
       ...data,
       iconName: 'Zap',
@@ -310,6 +370,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const handleUpdateAutomation = async (id: string, data: Partial<NewAutomationData>) => {
+    if (!db) return;
     await updateDoc(doc(db, "automations", id), data);
     toast({
         title: "Automation Updated",
@@ -318,6 +379,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const handleDeleteAutomation = async (id: string) => {
+    if (!db) return;
     await deleteDoc(doc(db, "automations", id));
     toast({
         title: "Automation Deleted",
@@ -326,6 +388,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const handleCreateDevice = async (data: NewDeviceData) => {
+    if (!db) return;
     const newDevice = {
         ...data,
         active: false,
@@ -341,6 +404,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const handleUpdateDevice = async (id: string, data: Partial<NewDeviceData>) => {
+      if (!db) return;
       await updateDoc(doc(db, "devices", id), data);
       toast({
           title: "Device Updated",
@@ -349,6 +413,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const handleDeleteDevice = async (id: string) => {
+      if (!db) return;
       await deleteDoc(doc(db, "devices", id));
       toast({
           title: "Device Deleted",
@@ -356,12 +421,39 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
   };
 
-  const login = (role: 'user' | 'admin') => {
-    setIsAdmin(role === 'admin');
+  const signUp = async (fullName: string, email: string, password: string): Promise<void> => {
+    if (!auth || !db) return notConfiguredError();
+
+    const usersCollectionRef = collection(db, "users");
+    const usersSnapshot = await getDocs(usersCollectionRef);
+    const isFirstUser = usersSnapshot.empty;
+    const role = isFirstUser ? 'admin' : 'user';
+
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    const newUserProfile: UserProfile = {
+      uid: user.uid,
+      email: user.email!,
+      name: fullName,
+      role: role,
+    };
+
+    await setDoc(doc(db, "users", user.uid), newUserProfile);
+    
+    if (isFirstUser) {
+        await seedDatabase();
+    }
   };
 
-  const logout = () => {
-    setIsAdmin(false);
+  const login = async (email: string, password: string): Promise<void> => {
+    if (!auth) return notConfiguredError();
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const logout = async (): Promise<void> => {
+    if (!auth) return;
+    await signOut(auth);
   };
 
   // Replace icon names with actual components before rendering
@@ -371,6 +463,9 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const enrichedAutomations = automations.map(a => ({ ...a, icon: getIcon(a.iconName) }));
 
   const value = {
+    user,
+    userProfile,
+    authLoading,
     devices: enrichedDevices,
     rooms: enrichedRooms,
     scenes: enrichedScenes,
@@ -389,6 +484,8 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     isAdmin,
     login,
     logout,
+    signUp,
+    notConfiguredError,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

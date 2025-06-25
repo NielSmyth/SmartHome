@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -35,11 +36,11 @@ const signInSchema = z.object({
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAppContext();
-  const { toast } = useToast();
+  const { login, notConfiguredError } = useAppContext();
   const [isLoading, setIsLoading] = React.useState(false);
+  const { toast } = useToast();
 
-  const signInForm = useForm<z.infer<typeof signInSchema>>({
+  const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
       email: '',
@@ -47,17 +48,26 @@ export default function LoginPage() {
     },
   });
 
-  async function onSignInSubmit(values: z.infer<typeof signInSchema>) {
+  async function onSubmit(values: z.infer<typeof signInSchema>) {
     setIsLoading(true);
     try {
       await login(values.email, values.password);
+      // Successful login will trigger onAuthStateChanged, which handles the redirect logic via the AppShell
       router.push('/dashboard');
     } catch (error: any) {
-      toast({
-        title: "Login Failed",
-        description: error.message || "Please check your email and password.",
-        variant: "destructive",
-      });
+      if (error.message.includes("Firebase is not configured")) {
+        toast({
+          title: "Configuration Error",
+          description: "Firebase is not configured. Please add your project credentials to the .env file.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "Please check your email and password.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -86,13 +96,13 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...signInForm}>
+          <Form {...form}>
             <form
-              onSubmit={signInForm.handleSubmit(onSignInSubmit)}
+              onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-4"
             >
               <FormField
-                control={signInForm.control}
+                control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
@@ -110,7 +120,7 @@ export default function LoginPage() {
                 )}
               />
               <FormField
-                control={signInForm.control}
+                control={form.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>

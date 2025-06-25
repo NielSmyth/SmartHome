@@ -1,10 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -24,42 +24,35 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Home, Shield } from 'lucide-react';
-import { useAppContext } from '@/context/app-state-context';
 import { useToast } from '@/hooks/use-toast';
 
-const signInSchema = z.object({
+const signUpSchema = z.object({
+  fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(1, { message: 'Password is required.' }),
+  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const router = useRouter();
-  const { login } = useAppContext();
   const { toast } = useToast();
 
-  const signInForm = useForm<z.infer<typeof signInSchema>>({
-    resolver: zodResolver(signInSchema),
+  const form = useForm<z.infer<typeof signUpSchema>>({
+    resolver: zodResolver(signUpSchema),
     defaultValues: {
+      fullName: '',
       email: '',
       password: '',
     },
   });
 
-  function onSignInSubmit(values: z.infer<typeof signInSchema>) {
-    // Dev login logic
-    if (values.email === 'admin@example.com' && values.password === 'adminpassword') {
-      login('admin');
-      router.push('/dashboard');
-    } else if (values.email === 'user@example.com' && values.password === 'password123') {
-      login('user');
-      router.push('/dashboard');
-    } else {
-      toast({
-        title: "Invalid Credentials",
-        description: "Please check your email and password.",
-        variant: "destructive",
-      });
-    }
+  function onSubmit(values: z.infer<typeof signUpSchema>) {
+    // In a real app, you would handle user creation here (e.g., Firebase Auth)
+    console.log('New user signed up:', values);
+    toast({
+      title: "Account Created!",
+      description: "You've been successfully signed up. Please log in.",
+    });
+    router.push('/login');
   }
 
   return (
@@ -70,32 +63,45 @@ export default function LoginPage() {
           <Shield className="w-8 h-8 text-blue-400" />
         </div>
         <h1 className="text-4xl md:text-5xl font-bold font-headline">
-          Smart Home Control
+          Create Your Account
         </h1>
         <p className="text-slate-300 mt-2">
-          Secure access to your smart home dashboard
+          Join to manage your smart home with ease.
         </p>
       </div>
 
       <Card className="w-full max-w-md bg-slate-800/50 border-slate-700 text-white">
         <CardHeader>
-          <CardTitle className="text-2xl">Welcome!</CardTitle>
+          <CardTitle className="text-2xl">Sign Up</CardTitle>
            <CardDescription className="text-slate-400 pt-2">
-            Use these credentials for development access:
-            <ul className="list-disc pl-5 mt-2 text-slate-300">
-              <li><b>Admin:</b> admin@example.com / adminpassword</li>
-              <li><b>User:</b> user@example.com / password123</li>
-            </ul>
+            Enter your details to create a new account.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...signInForm}>
+          <Form {...form}>
             <form
-              onSubmit={signInForm.handleSubmit(onSignInSubmit)}
+              onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-4"
             >
               <FormField
-                control={signInForm.control}
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter your full name"
+                        className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
@@ -113,7 +119,7 @@ export default function LoginPage() {
                 )}
               />
               <FormField
-                control={signInForm.control}
+                control={form.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
@@ -134,14 +140,14 @@ export default function LoginPage() {
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700"
               >
-                Sign In
+                Create Account
               </Button>
             </form>
           </Form>
           <div className="mt-4 text-center text-sm text-slate-400">
-            Don't have an account?{' '}
-            <Link href="/signup" className="underline text-blue-400 hover:text-blue-300">
-              Sign Up
+            Already have an account?{' '}
+            <Link href="/login" className="underline text-blue-400 hover:text-blue-300">
+              Sign In
             </Link>
           </div>
         </CardContent>

@@ -22,6 +22,7 @@ import {
   Bell,
   Mic,
   Loader,
+  KeyRound,
 } from "lucide-react";
 
 import {
@@ -54,42 +55,15 @@ import { textToSpeech } from "@/ai/flows/text-to-speech-flow";
 import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
-  {
-    href: "/dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    href: "/rooms",
-    label: "Rooms",
-    icon: Home,
-  },
-  {
-    href: "/scenes",
-    label: "Scenes",
-    icon: Wand2,
-  },
-  {
-    href: "/automations",
-    label: "Automations",
-    icon: Zap,
-  },
-  {
-    href: "/energy",
-    label: "Energy Monitor",
-    icon: BarChart2,
-  },
-  {
-    href: "/system",
-    label: "System Status",
-    icon: Shield,
-  },
-  {
-    href: "/profile",
-    label: "Profile",
-    icon: User,
-  },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/rooms", label: "Rooms", icon: Home },
+  { href: "/scenes", label: "Scenes", icon: Wand2 },
+  { href: "/automations", label: "Automations", icon: Zap },
+  { href: "/energy", label: "Energy Monitor", icon: BarChart2 },
+  { href: "/system", label: "System Status", icon: Shield },
 ];
+
+const adminMenuItem = { href: "/admin", label: "Admin", icon: KeyRound };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -104,6 +78,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     handleDeviceToggle,
     handleActivateScene,
     handleAutomationToggle,
+    logout,
+    isAdmin,
   } = useAppContext();
 
   const [isProcessingVoice, setIsProcessingVoice] = React.useState(false);
@@ -135,7 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         case "device":
           const device = devices.find((d) => d.name === result.target);
           if (device) {
-            handleDeviceToggle(result.target);
+            handleDeviceToggle(device.id);
             actionTaken = true;
           }
           break;
@@ -144,8 +120,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           actionTaken = true;
           break;
         case "automation":
-          handleAutomationToggle(result.target, result.value);
-          actionTaken = true;
+          const automation = automations.find(a => a.name === result.target);
+          if (automation) {
+            handleAutomationToggle(automation.id, result.value);
+            actionTaken = true;
+          }
           break;
         case "navigation":
           router.push(`/${result.target.toLowerCase()}`);
@@ -183,6 +162,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   });
 
   const handleLogout = () => {
+    logout();
     router.push("/login");
   };
 
@@ -193,6 +173,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       start();
     }
   };
+
+  const allMenuItems = isAdmin ? [...menuItems, adminMenuItem] : menuItems;
 
   return (
     <SidebarProvider>
@@ -209,7 +191,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {menuItems.map((item) => (
+            {allMenuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
@@ -225,6 +207,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
+             <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/profile")}
+                  tooltip="Profile"
+                >
+                  <Link href="/profile">
+                    <User />
+                    <span className="group-data-[state=collapsed]:hidden">
+                      Profile
+                    </span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="mt-auto border-t p-2 flex justify-center">

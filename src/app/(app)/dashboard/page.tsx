@@ -22,7 +22,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {devices.map((device) => (
-          <Card key={device.name}>
+          <Card key={device.id}>
             <CardContent className="p-4 flex flex-col gap-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -32,7 +32,7 @@ export default function DashboardPage() {
                     <p className="text-sm text-muted-foreground">{device.location}</p>
                   </div>
                 </div>
-                <Switch checked={device.active} onCheckedChange={() => handleDeviceToggle(device.name)} />
+                <Switch checked={device.active} onCheckedChange={() => handleDeviceToggle(device.id)} />
               </div>
               <div className="flex items-center justify-between">
                 <Badge variant={device.statusVariant as any}>{device.status}</Badge>

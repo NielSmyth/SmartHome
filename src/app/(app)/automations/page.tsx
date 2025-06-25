@@ -210,7 +210,7 @@ export default function AutomationsPage() {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {automations.map((automation) => (
           <Card
-            key={automation.name}
+            key={automation.id}
             className="flex flex-col justify-between p-6"
           >
             <div>
@@ -226,7 +226,7 @@ export default function AutomationsPage() {
                 </div>
                 <Switch
                   checked={automation.active}
-                  onCheckedChange={() => handleAutomationToggle(automation.name)}
+                  onCheckedChange={() => handleAutomationToggle(automation.id)}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4 mt-4">

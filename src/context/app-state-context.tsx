@@ -19,6 +19,7 @@ import {
   Sunset,
   Tv,
   Wind,
+  Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -66,6 +67,13 @@ export interface Automation {
     active: boolean;
 }
 
+export interface NewAutomationData {
+  name: string;
+  description: string;
+  trigger: string;
+  action: string;
+}
+
 interface AppState {
   devices: Device[];
   rooms: Room[];
@@ -76,6 +84,7 @@ interface AppState {
   handleActivateScene: (sceneName: string) => void;
   handleCreateScene: (name: string, description: string) => void;
   handleAutomationToggle: (automationName: string, forceState?: boolean) => void;
+  handleCreateAutomation: (data: NewAutomationData) => void;
 }
 
 // Initial Data
@@ -265,6 +274,24 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   };
 
+  const handleCreateAutomation = (data: NewAutomationData) => {
+    const newAutomation: Automation = {
+      name: data.name,
+      description: data.description,
+      trigger: data.trigger,
+      action: data.action,
+      icon: Zap,
+      active: true,
+      status: "Active",
+      lastRun: "Never",
+    };
+    setAutomations((prev) => [...prev, newAutomation]);
+    toast({
+      title: "Automation Created",
+      description: `The "${data.name}" automation has been successfully created.`,
+    });
+  };
+
   const value = {
     devices,
     rooms,
@@ -275,6 +302,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     handleActivateScene,
     handleCreateScene,
     handleAutomationToggle,
+    handleCreateAutomation,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -11,6 +12,7 @@ import {
   addDoc,
   getDocs,
   writeBatch,
+  deleteDoc,
 } from "firebase/firestore";
 import {
   AirVent,
@@ -82,6 +84,13 @@ export interface Automation {
   active: boolean;
 }
 
+export interface NewDeviceData {
+  name: string;
+  location: string;
+  type: string;
+  iconName: string;
+}
+
 export interface NewAutomationData {
   name: string;
   description: string;
@@ -100,6 +109,11 @@ interface AppState {
   handleCreateScene: (name: string, description: string) => void;
   handleAutomationToggle: (automationId: string, forceState?: boolean) => void;
   handleCreateAutomation: (data: NewAutomationData) => void;
+  handleUpdateAutomation: (id: string, data: Partial<NewAutomationData>) => void;
+  handleDeleteAutomation: (id: string) => void;
+  handleCreateDevice: (data: NewDeviceData) => void;
+  handleUpdateDevice: (id: string, data: Partial<NewDeviceData>) => void;
+  handleDeleteDevice: (id: string) => void;
   isAdmin: boolean;
   login: (role: 'user' | 'admin') => void;
   logout: () => void;
@@ -244,8 +258,6 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
   
   const handleAllLights = (roomName: string, turnOn: boolean) => {
-    // This is more complex with Firestore and would require a batch write.
-    // For now, we show a toast.
     console.log(`Toggling all lights in ${roomName} to ${turnOn}`);
     toast({
       title: "Action in progress",
@@ -284,10 +296,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const handleCreateAutomation = async (data: NewAutomationData) => {
     const newAutomation = {
-      name: data.name,
-      description: data.description,
-      trigger: data.trigger,
-      action: data.action,
+      ...data,
       iconName: 'Zap',
       active: true,
       status: "Active",
@@ -298,6 +307,53 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       title: "Automation Created",
       description: `The "${data.name}" automation has been successfully created.`,
     });
+  };
+
+  const handleUpdateAutomation = async (id: string, data: Partial<NewAutomationData>) => {
+    await updateDoc(doc(db, "automations", id), data);
+    toast({
+        title: "Automation Updated",
+        description: `The automation has been updated.`,
+    });
+  };
+
+  const handleDeleteAutomation = async (id: string) => {
+    await deleteDoc(doc(db, "automations", id));
+    toast({
+        title: "Automation Deleted",
+        description: "The automation has been removed from the system.",
+    });
+  };
+
+  const handleCreateDevice = async (data: NewDeviceData) => {
+    const newDevice = {
+        ...data,
+        active: false,
+        status: 'Off',
+        statusVariant: 'secondary',
+        time: 'Just now',
+    };
+    await addDoc(collection(db, "devices"), newDevice);
+    toast({
+        title: "Device Created",
+        description: `The "${data.name}" device has been added.`,
+    });
+  };
+
+  const handleUpdateDevice = async (id: string, data: Partial<NewDeviceData>) => {
+      await updateDoc(doc(db, "devices", id), data);
+      toast({
+          title: "Device Updated",
+          description: `The device has been updated.`,
+      });
+  };
+
+  const handleDeleteDevice = async (id: string) => {
+      await deleteDoc(doc(db, "devices", id));
+      toast({
+          title: "Device Deleted",
+          description: "The device has been removed from the system.",
+      });
   };
 
   const login = (role: 'user' | 'admin') => {
@@ -325,6 +381,11 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     handleCreateScene,
     handleAutomationToggle,
     handleCreateAutomation,
+    handleUpdateAutomation,
+    handleDeleteAutomation,
+    handleCreateDevice,
+    handleUpdateDevice,
+    handleDeleteDevice,
     isAdmin,
     login,
     logout,

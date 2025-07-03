@@ -67,6 +67,17 @@ export interface Automation {
   active: boolean;
 }
 
+export interface NewDeviceData {
+    name: string;
+    location: string;
+    type: string;
+}
+
+export interface NewRoomData {
+    name: string;
+    temp: number;
+}
+
 export interface NewAutomationData {
   name: string;
   description: string;
@@ -92,13 +103,23 @@ interface AppState {
   handleAllLights: (roomName: string, turnOn: boolean) => void;
   handleActivateScene: (sceneName: string) => void;
   handleCreateScene: (name: string, description: string) => void;
+  handleUpdateScene: (originalName: string, data: { name: string, description: string }) => void;
+  handleDeleteScene: (sceneName: string) => void;
   handleAutomationToggle: (
     automationName: string,
     forceState?: boolean
   ) => void;
   handleCreateAutomation: (data: NewAutomationData) => void;
+  handleUpdateAutomation: (originalName: string, data: NewAutomationData) => void;
+  handleDeleteAutomation: (automationName: string) => void;
   handleUpdateUserRole: (userId: string, role: "admin" | "user") => void;
   handleDeleteUser: (userId: string) => void;
+  handleCreateDevice: (data: NewDeviceData) => void;
+  handleUpdateDevice: (originalName: string, data: NewDeviceData) => void;
+  handleDeleteDevice: (deviceName: string) => void;
+  handleCreateRoom: (data: NewRoomData) => void;
+  handleUpdateRoom: (originalName: string, data: NewRoomData) => void;
+  handleDeleteRoom: (roomName: string) => void;
 }
 
 // Initial Data
@@ -329,6 +350,16 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const handleUpdateScene = (originalName: string, data: { name: string, description: string }) => {
+    setScenes(prev => prev.map(s => s.name === originalName ? { ...s, name: data.name, description: data.description } : s));
+    toast({ title: "Scene Updated" });
+  };
+  
+  const handleDeleteScene = (sceneName: string) => {
+    setScenes(prev => prev.filter(s => s.name !== sceneName));
+    toast({ title: "Scene Deleted", variant: "destructive" });
+  };
+
   const handleAutomationToggle = (
     automationName: string,
     forceState?: boolean
@@ -367,6 +398,16 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const handleUpdateAutomation = (originalName: string, data: NewAutomationData) => {
+    setAutomations(prev => prev.map(a => a.name === originalName ? { ...a, ...data } : a));
+    toast({ title: "Automation Updated" });
+  };
+
+  const handleDeleteAutomation = (automationName: string) => {
+    setAutomations(prev => prev.filter(a => a.name !== automationName));
+    toast({ title: "Automation Deleted", variant: "destructive" });
+  };
+
   const handleUpdateUserRole = (userId: string, role: "admin" | "user") => {
     setUsers((prevUsers) =>
       prevUsers.map((user) => (user.id === userId ? { ...user, role } : user))
@@ -386,7 +427,55 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
-  const value = {
+  const handleCreateDevice = (data: NewDeviceData) => {
+    const newDevice: Device = {
+        ...data,
+        icon: Lightbulb,
+        active: false,
+        status: 'Off',
+        statusVariant: 'secondary',
+        time: 'Just now',
+    };
+    setDevices(prev => [...prev, newDevice]);
+    toast({ title: "Device Created" });
+  };
+
+  const handleUpdateDevice = (originalName: string, data: NewDeviceData) => {
+    setDevices(prev => prev.map(d => d.name === originalName ? { ...d, ...data } : d));
+    toast({ title: "Device Updated" });
+  };
+
+  const handleDeleteDevice = (deviceName: string) => {
+    setDevices(prev => prev.filter(d => d.name !== deviceName));
+    setRooms(prevRooms => prevRooms.map(room => ({
+        ...room,
+        devices: room.devices.filter(d => d.name !== deviceName)
+    })));
+    toast({ title: "Device Deleted", variant: "destructive" });
+  };
+  
+  const handleCreateRoom = (data: NewRoomData) => {
+    const newRoom: Room = {
+        ...data,
+        lightsOn: 0,
+        lightsTotal: 0,
+        devices: [],
+    };
+    setRooms(prev => [...prev, newRoom]);
+    toast({ title: "Room Created" });
+  };
+  
+  const handleUpdateRoom = (originalName: string, data: NewRoomData) => {
+    setRooms(prev => prev.map(r => r.name === originalName ? { ...r, ...data } : r));
+    toast({ title: "Room Updated" });
+  };
+
+  const handleDeleteRoom = (roomName: string) => {
+    setRooms(prev => prev.filter(r => r.name !== roomName));
+    toast({ title: "Room Deleted", variant: "destructive" });
+  };
+
+  const value: AppState = {
     devices,
     rooms,
     scenes,
@@ -396,10 +485,20 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
     handleAllLights,
     handleActivateScene,
     handleCreateScene,
+    handleUpdateScene,
+    handleDeleteScene,
     handleAutomationToggle,
     handleCreateAutomation,
+    handleUpdateAutomation,
+    handleDeleteAutomation,
     handleUpdateUserRole,
     handleDeleteUser,
+    handleCreateDevice,
+    handleUpdateDevice,
+    handleDeleteDevice,
+    handleCreateRoom,
+    handleUpdateRoom,
+    handleDeleteRoom,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -22,6 +22,7 @@ import {
   Bell,
   Mic,
   Loader,
+  Users,
 } from "lucide-react";
 
 import {
@@ -83,6 +84,11 @@ const menuItems = [
     href: "/system",
     label: "System Status",
     icon: Shield,
+  },
+  {
+    href: "/admin",
+    label: "Admin",
+    icon: Users,
   },
   {
     href: "/profile",

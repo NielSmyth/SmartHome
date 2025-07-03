@@ -36,35 +36,35 @@ export interface Device {
 }
 
 export interface RoomDevice {
-    name: string;
-    type: string;
-    icon: LucideIcon;
-    active: boolean;
+  name: string;
+  type: string;
+  icon: LucideIcon;
+  active: boolean;
 }
 
 export interface Room {
-    name: string;
-    temp: number;
-    lightsOn: number;
-    lightsTotal: number;
-    devices: RoomDevice[];
+  name: string;
+  temp: number;
+  lightsOn: number;
+  lightsTotal: number;
+  devices: RoomDevice[];
 }
 
 export interface Scene {
-    name: string;
-    icon: LucideIcon;
-    description: string;
+  name: string;
+  icon: LucideIcon;
+  description: string;
 }
 
 export interface Automation {
-    icon: LucideIcon;
-    name: string;
-    description: string;
-    trigger: string;
-    action: string;
-    status: string;
-    lastRun: string;
-    active: boolean;
+  icon: LucideIcon;
+  name: string;
+  description: string;
+  trigger: string;
+  action: string;
+  status: string;
+  lastRun: string;
+  active: boolean;
 }
 
 export interface NewAutomationData {
@@ -74,17 +74,31 @@ export interface NewAutomationData {
   action: string;
 }
 
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "user";
+  lastLogin: string;
+}
+
 interface AppState {
   devices: Device[];
   rooms: Room[];
   scenes: Scene[];
   automations: Automation[];
+  users: UserProfile[];
   handleDeviceToggle: (deviceName: string, roomName?: string) => void;
   handleAllLights: (roomName: string, turnOn: boolean) => void;
   handleActivateScene: (sceneName: string) => void;
   handleCreateScene: (name: string, description: string) => void;
-  handleAutomationToggle: (automationName: string, forceState?: boolean) => void;
+  handleAutomationToggle: (
+    automationName: string,
+    forceState?: boolean
+  ) => void;
   handleCreateAutomation: (data: NewAutomationData) => void;
+  handleUpdateUserRole: (userId: string, role: "admin" | "user") => void;
+  handleDeleteUser: (userId: string) => void;
 }
 
 // Initial Data
@@ -163,84 +177,136 @@ const initialAutomations: Automation[] = [
   { icon: Wind, name: "Climate Control", description: "Adjust temperature based on occupancy", trigger: "Occupancy change", action: "Adjust AC", status: "Active", lastRun: "1 hour ago", active: true, },
 ];
 
+const initialUsers: UserProfile[] = [
+  {
+    id: "1",
+    name: "Admin User",
+    email: "admin@example.com",
+    role: "admin",
+    lastLogin: "2 hours ago",
+  },
+  {
+    id: "2",
+    name: "John Doe",
+    email: "john.doe@example.com",
+    role: "user",
+    lastLogin: "1 day ago",
+  },
+  {
+    id: "3",
+    name: "Jane Smith",
+    email: "jane.smith@example.com",
+    role: "user",
+    lastLogin: "3 days ago",
+  },
+];
+
 // Context
 const AppContext = React.createContext<AppState | undefined>(undefined);
 
-export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [devices, setDevices] = React.useState<Device[]>(initialDevices);
   const [rooms, setRooms] = React.useState<Room[]>(initialRooms);
   const [scenes, setScenes] = React.useState<Scene[]>(initialScenes);
-  const [automations, setAutomations] = React.useState<Automation[]>(initialAutomations);
+  const [automations, setAutomations] =
+    React.useState<Automation[]>(initialAutomations);
+  const [users, setUsers] = React.useState<UserProfile[]>(initialUsers);
   const { toast } = useToast();
 
   const handleDeviceToggle = (deviceName: string, roomName?: string) => {
     // Update main device list (for dashboard)
-    setDevices(prevDevices => prevDevices.map(device => {
+    setDevices((prevDevices) =>
+      prevDevices.map((device) => {
         if (device.name === deviceName) {
-            const newActiveState = !device.active;
-            let newStatus = device.status;
-            let newStatusVariant: any = device.statusVariant;
-    
-            if (device.type.toLowerCase().includes('light')) {
-              newStatus = newActiveState ? 'On' : 'Off';
-              newStatusVariant = newActiveState ? 'default' : 'secondary';
-            } else if (device.type.toLowerCase().includes('lock')) {
-              newStatus = newActiveState ? 'Locked' : 'Unlocked';
-              newStatusVariant = newActiveState ? 'default' : 'destructive';
-            } else if (device.type.toLowerCase().includes('camera')) {
-              newStatus = newActiveState ? 'Recording' : 'Off';
-              newStatusVariant = newActiveState ? 'default' : 'secondary';
-            } else if (device.type.toLowerCase().includes('ac')) {
-              newStatus = newActiveState ? 'Cooling' : 'Off';
-              newStatusVariant = newActiveState ? 'default' : 'secondary';
-            }
-            
-            return { ...device, active: newActiveState, status: newStatus, statusVariant: newStatusVariant, time: 'Just now' };
+          const newActiveState = !device.active;
+          let newStatus = device.status;
+          let newStatusVariant: any = device.statusVariant;
+
+          if (device.type.toLowerCase().includes("light")) {
+            newStatus = newActiveState ? "On" : "Off";
+            newStatusVariant = newActiveState ? "default" : "secondary";
+          } else if (device.type.toLowerCase().includes("lock")) {
+            newStatus = newActiveState ? "Locked" : "Unlocked";
+            newStatusVariant = newActiveState ? "default" : "destructive";
+          } else if (device.type.toLowerCase().includes("camera")) {
+            newStatus = newActiveState ? "Recording" : "Off";
+            newStatusVariant = newActiveState ? "default" : "secondary";
+          } else if (device.type.toLowerCase().includes("ac")) {
+            newStatus = newActiveState ? "Cooling" : "Off";
+            newStatusVariant = newActiveState ? "default" : "secondary";
+          }
+
+          return {
+            ...device,
+            active: newActiveState,
+            status: newStatus,
+            statusVariant: newStatusVariant,
+            time: "Just now",
+          };
         }
         return device;
-    }));
+      })
+    );
 
     // Update rooms device list
     if (roomName) {
-        setRooms(prevRooms => prevRooms.map(room => {
-            if (room.name === roomName) {
-                const newDevices = room.devices.map(device => {
-                    if (device.name === deviceName) {
-                        return { ...device, active: !device.active };
-                    }
-                    return device;
-                });
-                const newLightsOn = newDevices.filter(d => d.type === "Light" && d.active).length;
-                return { ...room, devices: newDevices, lightsOn: newLightsOn };
-            }
-            return room;
-        }));
+      setRooms((prevRooms) =>
+        prevRooms.map((room) => {
+          if (room.name === roomName) {
+            const newDevices = room.devices.map((device) => {
+              if (device.name === deviceName) {
+                return { ...device, active: !device.active };
+              }
+              return device;
+            });
+            const newLightsOn = newDevices.filter(
+              (d) => d.type === "Light" && d.active
+            ).length;
+            return { ...room, devices: newDevices, lightsOn: newLightsOn };
+          }
+          return room;
+        })
+      );
     }
   };
 
   const handleAllLights = (roomName: string, turnOn: boolean) => {
-    setRooms(prevRooms => prevRooms.map(room => {
+    setRooms((prevRooms) =>
+      prevRooms.map((room) => {
         if (room.name === roomName) {
-            const newDevices = room.devices.map(device => {
-                if (device.type === "Light") {
-                    return { ...device, active: turnOn };
-                }
-                return device;
-            });
-            const newLightsOn = newDevices.filter(d => d.type === "Light" && d.active).length;
-            
-            // Also update the main device list
-            setDevices(prevDevices => prevDevices.map(d => {
-                if (d.location === roomName && d.type === 'light') {
-                    return {...d, active: turnOn, status: turnOn ? 'On' : 'Off', statusVariant: turnOn ? 'default' : 'secondary', time: 'Just now' };
-                }
-                return d;
-            }));
+          const newDevices = room.devices.map((device) => {
+            if (device.type === "Light") {
+              return { ...device, active: turnOn };
+            }
+            return device;
+          });
+          const newLightsOn = newDevices.filter(
+            (d) => d.type === "Light" && d.active
+          ).length;
 
-            return { ...room, devices: newDevices, lightsOn: newLightsOn };
+          // Also update the main device list
+          setDevices((prevDevices) =>
+            prevDevices.map((d) => {
+              if (d.location === roomName && d.type === "light") {
+                return {
+                  ...d,
+                  active: turnOn,
+                  status: turnOn ? "On" : "Off",
+                  statusVariant: turnOn ? "default" : "secondary",
+                  time: "Just now",
+                };
+              }
+              return d;
+            })
+          );
+
+          return { ...room, devices: newDevices, lightsOn: newLightsOn };
         }
         return room;
-    }));
+      })
+    );
   };
 
   const handleActivateScene = (sceneName: string) => {
@@ -256,18 +322,27 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       description,
       icon: Lightbulb,
     };
-    setScenes(prev => [...prev, newScene]);
+    setScenes((prev) => [...prev, newScene]);
     toast({
       title: "Scene Created",
       description: `The "${name}" scene has been created.`,
     });
   };
 
-  const handleAutomationToggle = (automationName: string, forceState?: boolean) => {
-    setAutomations(prev => prev.map(auto => {
+  const handleAutomationToggle = (
+    automationName: string,
+    forceState?: boolean
+  ) => {
+    setAutomations((prev) =>
+      prev.map((auto) => {
         if (auto.name === automationName) {
-          const newActiveState = forceState !== undefined ? forceState : !auto.active;
-          return { ...auto, active: newActiveState, status: newActiveState ? "Active" : "Paused" };
+          const newActiveState =
+            forceState !== undefined ? forceState : !auto.active;
+          return {
+            ...auto,
+            active: newActiveState,
+            status: newActiveState ? "Active" : "Paused",
+          };
         }
         return auto;
       })
@@ -292,17 +367,39 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
+  const handleUpdateUserRole = (userId: string, role: "admin" | "user") => {
+    setUsers((prevUsers) =>
+      prevUsers.map((user) => (user.id === userId ? { ...user, role } : user))
+    );
+    toast({
+      title: "User Role Updated",
+      description: `User role has been successfully changed to ${role}.`,
+    });
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+    toast({
+      title: "User Deleted",
+      description: "The user has been successfully deleted.",
+      variant: "destructive",
+    });
+  };
+
   const value = {
     devices,
     rooms,
     scenes,
     automations,
+    users,
     handleDeviceToggle,
     handleAllLights,
     handleActivateScene,
     handleCreateScene,
     handleAutomationToggle,
     handleCreateAutomation,
+    handleUpdateUserRole,
+    handleDeleteUser,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

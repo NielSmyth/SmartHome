@@ -72,7 +72,7 @@ export default function LoginPage() {
           <Shield className="w-8 h-8 text-blue-400" />
         </div>
         <h1 className="text-4xl md:text-5xl font-bold font-headline">
-          Smart Home Control
+          Smart Home Automation
         </h1>
         <p className="text-slate-300 mt-2">
           Secure access to your smart home dashboard

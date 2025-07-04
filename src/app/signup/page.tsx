@@ -1,12 +1,10 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import Link from 'next/link';
-import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -26,51 +24,35 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Home, Shield } from 'lucide-react';
-import { useAppContext } from '@/context/app-state-context';
 import { useToast } from '@/hooks/use-toast';
 
-const signInSchema = z.object({
+const signUpSchema = z.object({
+  fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(1, { message: 'Password is required.' }),
+  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const router = useRouter();
-  const { login, notConfiguredError } = useAppContext();
-  const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof signInSchema>>({
-    resolver: zodResolver(signInSchema),
+  const form = useForm<z.infer<typeof signUpSchema>>({
+    resolver: zodResolver(signUpSchema),
     defaultValues: {
+      fullName: '',
       email: '',
       password: '',
     },
   });
 
-  async function onSubmit(values: z.infer<typeof signInSchema>) {
-    setIsLoading(true);
-    try {
-      await login(values.email, values.password);
-      // Successful login will trigger onAuthStateChanged, which handles the redirect logic via the AppShell
-      router.push('/dashboard');
-    } catch (error: any) {
-      if (error.message.includes("Firebase is not configured")) {
-        toast({
-          title: "Configuration Error",
-          description: "Firebase is not configured. Please add your project credentials to the .env file.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "Please check your email and password.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setIsLoading(false);
-    }
+  function onSubmit(values: z.infer<typeof signUpSchema>) {
+    // In a real app, you would handle user creation here (e.g., Firebase Auth)
+    console.log('New user signed up:', values);
+    toast({
+      title: "Account Created!",
+      description: "You've been successfully signed up. Please log in.",
+    });
+    router.push('/login');
   }
 
   return (
@@ -81,18 +63,18 @@ export default function LoginPage() {
           <Shield className="w-8 h-8 text-blue-400" />
         </div>
         <h1 className="text-4xl md:text-5xl font-bold font-headline">
-          Smart Home Control
+          Create Your Account
         </h1>
         <p className="text-slate-300 mt-2">
-          Secure access to your smart home dashboard
+          Join to manage your smart home with ease.
         </p>
       </div>
 
       <Card className="w-full max-w-md bg-slate-800/50 border-slate-700 text-white">
         <CardHeader>
-          <CardTitle className="text-2xl">Welcome Back!</CardTitle>
-          <CardDescription className="text-slate-400 pt-2">
-            Enter your credentials to access your dashboard.
+          <CardTitle className="text-2xl">Sign Up</CardTitle>
+           <CardDescription className="text-slate-400 pt-2">
+            Enter your details to create a new account.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -101,6 +83,23 @@ export default function LoginPage() {
               onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-4"
             >
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter your full name"
+                        className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="email"
@@ -140,16 +139,15 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={isLoading}
               >
-                {isLoading ? "Signing In..." : "Sign In"}
+                Create Account
               </Button>
             </form>
           </Form>
           <div className="mt-4 text-center text-sm text-slate-400">
-            Don't have an account?{' '}
-            <Link href="/signup" className="underline text-blue-400 hover:text-blue-300">
-              Sign Up
+            Already have an account?{' '}
+            <Link href="/login" className="underline text-blue-400 hover:text-blue-300">
+              Sign In
             </Link>
           </div>
         </CardContent>

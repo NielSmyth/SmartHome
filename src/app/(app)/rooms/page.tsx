@@ -31,7 +31,12 @@ const DeviceItem = ({
 );
 
 export default function RoomsPage() {
-  const { rooms, handleDeviceToggle, handleAllLights } = useAppContext();
+  const { rooms, handleDeviceToggle, handleAllLights, devices: allDevices } = useAppContext();
+
+  // A helper function to find the full device object by name
+  const findDeviceByName = (name: string) => {
+    return allDevices.find(d => d.name === name);
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -81,7 +86,12 @@ export default function RoomsPage() {
                 <DeviceItem
                   key={device.name}
                   device={device}
-                  onToggle={() => handleDeviceToggle(device.name, room.name)}
+                  onToggle={() => {
+                    const fullDevice = findDeviceByName(device.name);
+                    if (fullDevice) {
+                      handleDeviceToggle(fullDevice.id, room.name);
+                    }
+                  }}
                 />
               ))}
             </div>

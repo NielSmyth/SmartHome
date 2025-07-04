@@ -3,7 +3,6 @@
 import * as React from "react";
 import {
   BrainCircuit,
-  Lightbulb,
   Plus,
 } from "lucide-react";
 import {
@@ -124,7 +123,7 @@ export default function ScenesPage() {
                   <Card key={index}>
                     <CardContent className="flex items-center justify-between p-4">
                       <p className="font-medium">{scene}</p>
-                      <Button size="icon" variant="ghost">
+                      <Button size="icon" variant="ghost" onClick={() => handleCreateScene(scene, "AI Suggested Scene")}>
                         <Plus />
                       </Button>
                     </CardContent>
@@ -183,7 +182,7 @@ export default function ScenesPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {scenes.map((scene) => (
-          <Card key={scene.name} className="flex flex-col">
+          <Card key={scene.id} className="flex flex-col">
             <CardHeader className="flex-1">
               <div className="flex items-start justify-between">
                 <div>

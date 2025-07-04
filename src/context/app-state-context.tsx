@@ -267,13 +267,19 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Device Handlers
   const handleDeviceToggle = (deviceId: string, roomName?: string) => {
+    let toggledDeviceName = "";
+    let toggledDeviceType = "";
+    let newActiveState: boolean | undefined;
+  
     setDevices((prevDevices) =>
       prevDevices.map((device) => {
         if (device.id === deviceId) {
-          const newActiveState = !device.active;
+          newActiveState = !device.active;
+          toggledDeviceName = device.name;
+          toggledDeviceType = device.type;
           let newStatus = device.status;
           let newStatusVariant: any = device.statusVariant;
-
+  
           if (device.type.toLowerCase().includes("light")) {
             newStatus = newActiveState ? "On" : "Off";
             newStatusVariant = newActiveState ? "default" : "secondary";
@@ -287,16 +293,62 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
             newStatus = newActiveState ? "Cooling" : "Off";
             newStatusVariant = newActiveState ? "default" : "secondary";
           }
-
+  
           return { ...device, active: newActiveState, status: newStatus, statusVariant: newStatusVariant, time: "Just now" };
         }
         return device;
       })
     );
+  
+    if (roomName && toggledDeviceName && typeof newActiveState !== 'undefined') {
+      setRooms(prevRooms => prevRooms.map(room => {
+        if (room.name === roomName) {
+          let lightsOnDelta = 0;
+          const updatedRoomDevices = room.devices.map(rd => {
+            if (rd.name === toggledDeviceName) {
+              if (toggledDeviceType.toLowerCase().includes('light')) {
+                lightsOnDelta = newActiveState ? 1 : -1;
+              }
+              return { ...rd, active: newActiveState! };
+            }
+            return rd;
+          });
+          const newLightsOn = Math.max(0, room.lightsOn + lightsOnDelta);
+          return { ...room, devices: updatedRoomDevices, lightsOn: newLightsOn };
+        }
+        return room;
+      }));
+    }
   };
 
   const handleAllLights = (roomName: string, turnOn: boolean) => {
     toast({ title: `All lights in ${roomName} turned ${turnOn ? "on" : "off"}.` });
+    
+    setDevices(prevDevices => prevDevices.map(d => {
+        if (d.location === roomName && d.type.toLowerCase().includes('light')) {
+            return {
+                ...d,
+                active: turnOn,
+                status: turnOn ? 'On' : 'Off',
+                statusVariant: turnOn ? 'default' : 'secondary',
+            };
+        }
+        return d;
+    }));
+
+    setRooms(prevRooms => prevRooms.map(room => {
+        if (room.name === roomName) {
+            const updatedRoomDevices = room.devices.map(rd => {
+                if (rd.type.toLowerCase().includes('light')) {
+                    return { ...rd, active: turnOn };
+                }
+                return rd;
+            });
+            const newLightsOn = turnOn ? room.lightsTotal : 0;
+            return { ...room, devices: updatedRoomDevices, lightsOn: newLightsOn };
+        }
+        return room;
+    }));
   };
 
   const handleCreateDevice = (data: NewDeviceData) => {
@@ -349,6 +401,78 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
   // Scene Handlers
   const handleActivateScene = (sceneName: string) => {
     toast({ title: "Scene Activated", description: `The "${sceneName}" scene has been activated.` });
+
+    let updatedDevices = [...devices]; 
+
+    switch (sceneName) {
+        case "Good Morning":
+            updatedDevices = updatedDevices.map(d => {
+                if (d.name === 'Living Room Lights' || d.name === 'Bedroom Lights') {
+                    return { ...d, active: true, status: 'On', statusVariant: 'default' };
+                }
+                if (d.name === 'Front Door Lock') {
+                    return { ...d, active: false, status: 'Unlocked', statusVariant: 'destructive' };
+                }
+                return d;
+            });
+            break;
+        
+        case "Movie Night":
+            updatedDevices = updatedDevices.map(d => {
+                if (d.name === 'Kitchen Lights' || d.name === 'Bedroom Lights') {
+                    return { ...d, active: false, status: 'Off', statusVariant: 'secondary' };
+                }
+                if (d.name === 'Living Room Lights') {
+                    return { ...d, active: true, status: 'On', statusVariant: 'default' };
+                }
+                return d;
+            });
+            break;
+
+        case "Focus Time":
+            updatedDevices = updatedDevices.map(d => {
+                if (d.type.toLowerCase().includes('light')) {
+                    return { ...d, active: true, status: 'On', statusVariant: 'default' };
+                }
+                return d;
+            });
+            break;
+
+        case "Good Night":
+            updatedDevices = updatedDevices.map(d => {
+                if (d.type.toLowerCase().includes('light')) {
+                    return { ...d, active: false, status: 'Off', statusVariant: 'secondary' };
+                }
+                if (d.type.toLowerCase().includes('lock')) {
+                    return { ...d, active: true, status: 'Locked', statusVariant: 'default' };
+                }
+                return d;
+            });
+            break;
+        
+        default:
+            break;
+    }
+
+    setDevices(updatedDevices);
+
+    setRooms(prevRooms => {
+        return prevRooms.map(room => {
+            let newLightsOn = 0;
+            const updatedRoomDevices = room.devices.map(rd => {
+                const mainDevice = updatedDevices.find(d => d.name === rd.name);
+                if (mainDevice) {
+                    if (mainDevice.type.toLowerCase().includes('light') && mainDevice.active) {
+                        newLightsOn++;
+                    }
+                    return { ...rd, active: mainDevice.active };
+                }
+                return rd;
+            });
+
+            return { ...room, devices: updatedRoomDevices, lightsOn: newLightsOn };
+        });
+    });
   };
 
   const handleCreateScene = (name: string, description: string) => {
@@ -362,13 +486,13 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
     toast({ title: "Scene Created" });
   };
 
-  const handleUpdateScene = (name: string, data: { name: string, description: string }) => {
-    setScenes(prev => prev.map(s => s.name === name ? {...s, ...data} : s));
+  const handleUpdateScene = (id: string, data: { name: string, description: string }) => {
+    setScenes(prev => prev.map(s => s.id === id ? {...s, ...data} : s));
     toast({ title: "Scene Updated" });
   };
 
-  const handleDeleteScene = (name: string) => {
-    setScenes(prev => prev.filter(s => s.name !== name));
+  const handleDeleteScene = (id: string) => {
+    setScenes(prev => prev.filter(s => s.id !== id));
     toast({ title: "Scene Deleted" });
   };
   

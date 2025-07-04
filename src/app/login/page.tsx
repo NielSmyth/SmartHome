@@ -36,7 +36,7 @@ const signInSchema = z.object({
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, notConfiguredError } = useAppContext();
+  const { login } = useAppContext();
   const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
 
@@ -52,22 +52,13 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login(values.email, values.password);
-      // Successful login will trigger onAuthStateChanged, which handles the redirect logic via the AppShell
       router.push('/dashboard');
     } catch (error: any) {
-      if (error.message.includes("Firebase is not configured")) {
-        toast({
-          title: "Configuration Error",
-          description: "Firebase is not configured. Please add your project credentials to the .env file.",
-          variant: "destructive",
-        });
-      } else {
         toast({
           title: "Login Failed",
-          description: "Please check your email and password.",
+          description: error.message || "Please check your email and password.",
           variant: "destructive",
         });
-      }
     } finally {
       setIsLoading(false);
     }

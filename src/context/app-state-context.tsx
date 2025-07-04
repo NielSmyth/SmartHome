@@ -57,6 +57,7 @@ export interface Device {
   name: string;
   location: string;
   icon: LucideIcon;
+  iconName: string;
   type: string;
   status: string;
   time: string;
@@ -118,6 +119,13 @@ interface AppState {
   scenes: Scene[];
   automations: Automation[];
 
+  // Auth state
+  user: UserProfile | null;
+  authLoading: boolean;
+  isAdmin: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+
   // User handlers
   handleUpdateUserRole: (userId: string, role: "admin" | "user") => void;
   handleDeleteUser: (userId: string) => void;
@@ -169,26 +177,26 @@ const initialDevices: Device[] = [
 ].map(d => ({ ...d, icon: getIcon(d.iconName) }));
 
 const initialRooms: Room[] = [
-    { name: "Living Room", temp: 22, lightsOn: 1, lightsTotal: 2, devices: [ { name: "Living Room Lights", type: "Light", iconName: 'Lightbulb', active: true }, { name: "Accent Lights", type: "Light", iconName: 'Lamp', active: false }, { name: "Security Camera 1", type: "Camera", iconName: 'Camera', active: true }, { name: "Living Room AC", type: "AC", iconName: 'AirVent', active: false }, ], },
-    { name: "Kitchen", temp: 24, lightsOn: 2, lightsTotal: 2, devices: [ { name: "Kitchen Lights", type: "Light", iconName: 'Lightbulb', active: true }, { name: "Under Cabinet", type: "Light", iconName: 'Lamp', active: true }, { name: "Security Camera 2", type: "Camera", iconName: 'Camera', active: false }, ], },
-    { name: "Bedroom", temp: 20, lightsOn: 1, lightsTotal: 2, devices: [ { name: "Bedroom Lights", type: "Light", iconName: 'Lightbulb', active: false }, { name: "Bedside Lamp", type: "Light", iconName: 'Lamp', active: true }, { name: "Bedroom Door Lock", type: "Door", iconName: 'Lock', active: true }, { name: "Bedroom AC", type: "AC", iconName: 'AirVent', active: false }, ], },
-    { name: "Entrance", temp: 23, lightsOn: 1, lightsTotal: 1, devices: [ { name: "Entrance Light", type: "Light", iconName: 'Lightbulb', active: true }, { name: "Front Door Lock", type: "Door", iconName: 'DoorOpen', active: false }, { name: "Doorbell Camera", type: "Camera", iconName: 'Bell', active: false }, ], },
-].map(r => ({ ...r, devices: r.devices.map(d => ({ ...d, icon: getIcon(d.iconName) })) }));
+    { name: "Living Room", temp: 22, lightsOn: 1, lightsTotal: 2, devices: [ { name: "Living Room Lights", type: "Light", icon: getIcon('Lightbulb'), active: true }, { name: "Accent Lights", type: "Light", icon: getIcon('Lamp'), active: false }, { name: "Security Camera 1", type: "Camera", icon: getIcon('Camera'), active: true }, { name: "Living Room AC", type: "AC", icon: getIcon('AirVent'), active: false }, ], },
+    { name: "Kitchen", temp: 24, lightsOn: 2, lightsTotal: 2, devices: [ { name: "Kitchen Lights", type: "Light", icon: getIcon('Lightbulb'), active: true }, { name: "Under Cabinet", type: "Light", icon: getIcon('Lamp'), active: true }, { name: "Security Camera 2", type: "Camera", icon: getIcon('Camera'), active: false }, ], },
+    { name: "Bedroom", temp: 20, lightsOn: 1, lightsTotal: 2, devices: [ { name: "Bedroom Lights", type: "Light", icon: getIcon('Lightbulb'), active: false }, { name: "Bedside Lamp", type: "Light", icon: getIcon('Lamp'), active: true }, { name: "Bedroom Door Lock", type: "Door", icon: getIcon('Lock'), active: true }, { name: "Bedroom AC", type: "AC", icon: getIcon('AirVent'), active: false }, ], },
+    { name: "Entrance", temp: 23, lightsOn: 1, lightsTotal: 1, devices: [ { name: "Entrance Light", type: "Light", icon: getIcon('Lightbulb'), active: true }, { name: "Front Door Lock", type: "Door", icon: getIcon('DoorOpen'), active: false }, { name: "Doorbell Camera", type: "Camera", icon: getIcon('Bell'), active: false }, ], },
+];
 
 
 const initialScenes: Scene[] = [
-  { id: '1', name: "Good Morning", iconName: 'Sunrise', description: "Gradually brighten lights and start your day." },
-  { id: '2', name: "Movie Night", iconName: 'Tv', description: "Dim the lights and set the mood for a movie." },
-  { id: '3', name: "Focus Time", iconName: 'BrainCircuit', description: "Bright, cool lighting to help you concentrate." },
-  { id: '4', name: "Good Night", iconName: 'Sunset', description: "Turn off all lights and secure the house." },
-].map(s => ({ ...s, icon: getIcon(s.iconName) }));
+  { id: '1', name: "Good Morning", icon: getIcon('Sunrise'), description: "Gradually brighten lights and start your day." },
+  { id: '2', name: "Movie Night", icon: getIcon('Tv'), description: "Dim the lights and set the mood for a movie." },
+  { id: '3', name: "Focus Time", icon: getIcon('BrainCircuit'), description: "Bright, cool lighting to help you concentrate." },
+  { id: '4', name: "Good Night", icon: getIcon('Sunset'), description: "Turn off all lights and secure the house." },
+];
 
 const initialAutomations: Automation[] = [
-  { id: '1', iconName: 'Clock', name: "Morning Routine", description: "Turn on lights when motion detected after 6 AM", trigger: "Motion + Time", action: "Turn on lights", status: "Active", lastRun: "This morning", active: true, },
-  { id: '2', iconName: 'Sparkles', name: "Energy Saver", description: "Turn off lights when no motion for 10 minutes", trigger: "No motion", action: "Turn off lights", status: "Active", lastRun: "2 hours ago", active: true, },
-  { id: '3', iconName: 'Clock', name: "Security Mode", description: "Lock doors and arm cameras at 11 PM", trigger: "11:00 PM", action: "Lock & Arm", status: "Paused", lastRun: "Yesterday", active: false, },
-  { id: '4', iconName: 'Wind', name: "Climate Control", description: "Adjust temperature based on occupancy", trigger: "Occupancy change", action: "Adjust AC", status: "Active", lastRun: "1 hour ago", active: true, },
-].map(a => ({ ...a, icon: getIcon(a.iconName) }));
+  { id: '1', icon: getIcon('Clock'), name: "Morning Routine", description: "Turn on lights when motion detected after 6 AM", trigger: "Motion + Time", action: "Turn on lights", status: "Active", lastRun: "This morning", active: true, },
+  { id: '2', icon: getIcon('Sparkles'), name: "Energy Saver", description: "Turn off lights when no motion for 10 minutes", trigger: "No motion", action: "Turn off lights", status: "Active", lastRun: "2 hours ago", active: true, },
+  { id: '3', icon: getIcon('Clock'), name: "Security Mode", description: "Lock doors and arm cameras at 11 PM", trigger: "11:00 PM", action: "Lock & Arm", status: "Paused", lastRun: "Yesterday", active: false, },
+  { id: '4', icon: getIcon('Wind'), name: "Climate Control", description: "Adjust temperature based on occupancy", trigger: "Occupancy change", action: "Adjust AC", status: "Active", lastRun: "1 hour ago", active: true, },
+];
 
 
 export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -200,6 +208,52 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
   const [scenes, setScenes] = React.useState<Scene[]>(initialScenes);
   const [automations, setAutomations] = React.useState<Automation[]>(initialAutomations);
   const { toast } = useToast();
+
+  const [user, setUser] = React.useState<UserProfile | null>(null);
+  const [authLoading, setAuthLoading] = React.useState(true);
+  const [isAdmin, setIsAdmin] = React.useState(false);
+
+  React.useEffect(() => {
+    // In a real app, you would check a session token. For this mock, we just stop loading.
+    setAuthLoading(false);
+  }, []);
+
+  const login = async (email: string, password: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => { // Simulate network delay
+            if (email === 'admin@example.com' && password === 'password') {
+                const adminUser = users.find(u => u.role === 'admin');
+                if (adminUser) {
+                    setUser(adminUser);
+                    setIsAdmin(true);
+                    toast({ title: "Login Successful", description: "Welcome back, Admin!" });
+                    resolve();
+                } else {
+                    reject(new Error("Admin user not found in initial data."));
+                }
+            } else if (email === 'jane.doe@example.com' && password === 'password') {
+                const standardUser = users.find(u => u.email === 'jane.doe@example.com');
+                if (standardUser) {
+                    setUser(standardUser);
+                    setIsAdmin(false);
+                    toast({ title: "Login Successful", description: `Welcome back, ${standardUser.name}!` });
+                    resolve();
+                } else {
+                     reject(new Error("User not found in initial data."));
+                }
+            } else {
+                reject(new Error("Invalid email or password."));
+            }
+        }, 500);
+    });
+  };
+
+  const logout = () => {
+    setUser(null);
+    setIsAdmin(false);
+    toast({ title: "Logged Out", description: "You have been successfully logged out." });
+  };
+
 
   // User Handlers
   const handleUpdateUserRole = (userId: string, role: "admin" | "user") => {
@@ -253,6 +307,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
         status: "Off",
         statusVariant: "secondary",
         time: 'Just now',
+        iconName: data.type,
         icon: getIcon(data.type),
     };
     setDevices(prev => [...prev, newDevice]);
@@ -260,7 +315,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const handleUpdateDevice = (id: string, data: Partial<NewDeviceData>) => {
-    setDevices(prev => prev.map(d => d.id === id ? { ...d, ...data } as Device : d));
+    setDevices(prev => prev.map(d => d.id === id ? { ...d, ...data, icon: getIcon(data.type || d.type) } as Device : d));
     toast({ title: "Device Updated" });
   };
 
@@ -353,12 +408,17 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
     toast({ title: "Automation Deleted" });
   };
 
-  const value = {
+  const value: AppState = {
     users,
     devices,
     rooms,
     scenes,
     automations,
+    user,
+    authLoading,
+    isAdmin,
+    login,
+    logout,
     handleUpdateUserRole,
     handleDeleteUser,
     handleDeviceToggle,

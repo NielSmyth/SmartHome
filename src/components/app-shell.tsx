@@ -23,11 +23,7 @@ import {
   Bell,
   Mic,
   Loader,
-<<<<<<< HEAD
   Users,
-=======
-  KeyRound,
->>>>>>> 5779adb518060994c282e39f69c2da0dc352b980
 } from "lucide-react";
 
 import {
@@ -60,7 +56,6 @@ import { textToSpeech } from "@/ai/flows/text-to-speech-flow";
 import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
-<<<<<<< HEAD
   {
     href: "/dashboard",
     label: "Dashboard",
@@ -91,27 +86,20 @@ const menuItems = [
     label: "System Status",
     icon: Shield,
   },
-  {
+];
+
+const adminMenuItem = {
     href: "/admin",
     label: "Admin",
     icon: Users,
-  },
-  {
+};
+
+const profileMenuItem = {
     href: "/profile",
     label: "Profile",
     icon: User,
-  },
-=======
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/rooms", label: "Rooms", icon: Home },
-  { href: "/scenes", label: "Scenes", icon: Wand2 },
-  { href: "/automations", label: "Automations", icon: Zap },
-  { href: "/energy", label: "Energy Monitor", icon: BarChart2 },
-  { href: "/system", label: "System Status", icon: Shield },
->>>>>>> 5779adb518060994c282e39f69c2da0dc352b980
-];
+};
 
-const adminMenuItem = { href: "/admin", label: "Admin", icon: KeyRound };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -230,7 +218,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const allMenuItems = isAdmin ? [...menuItems, adminMenuItem] : menuItems;
+  const allMenuItems = isAdmin ? [...menuItems, adminMenuItem, profileMenuItem] : [...menuItems, profileMenuItem];
 
   if (authLoading || !user) {
     return (
@@ -271,20 +259,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
-             <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith("/profile")}
-                  tooltip="Profile"
-                >
-                  <Link href="/profile">
-                    <User />
-                    <span className="group-data-[state=collapsed]:hidden">
-                      Profile
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="mt-auto border-t p-2 flex justify-center">

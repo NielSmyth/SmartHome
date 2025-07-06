@@ -153,6 +153,7 @@ interface AppState {
   handleCreateAutomation: (data: NewAutomationData) => void;
   handleUpdateAutomation: (id: string, data: Partial<NewAutomationData>) => void;
   handleDeleteAutomation: (id: string) => void;
+  handleEmergencyShutdown: () => void;
 }
 
 // Context
@@ -532,6 +533,46 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
     toast({ title: "Automation Deleted" });
   };
 
+  const handleEmergencyShutdown = () => {
+    toast({
+        title: "Emergency Protocol Activated",
+        description: "All lights are off, doors are locked, and cameras are active.",
+        variant: "destructive",
+    });
+
+    const updatedDevices = devices.map(d => {
+        if (d.type.toLowerCase().includes('light')) {
+            return { ...d, active: false, status: 'Off', statusVariant: 'secondary' };
+        }
+        if (d.type.toLowerCase().includes('lock')) {
+            return { ...d, active: true, status: 'Locked', statusVariant: 'default' };
+        }
+        if (d.type.toLowerCase().includes('camera')) {
+            return { ...d, active: true, status: 'Recording', statusVariant: 'default' };
+        }
+        return d;
+    });
+
+    setDevices(updatedDevices);
+
+    setRooms(prevRooms => {
+        return prevRooms.map(room => {
+            let newLightsOn = 0;
+            const updatedRoomDevices = room.devices.map(rd => {
+                const mainDevice = updatedDevices.find(d => d.name === rd.name);
+                if (mainDevice) {
+                    if (mainDevice.type.toLowerCase().includes('light') && mainDevice.active) {
+                        newLightsOn++;
+                    }
+                    return { ...rd, active: mainDevice.active };
+                }
+                return rd;
+            });
+            return { ...room, devices: updatedRoomDevices, lightsOn: newLightsOn };
+        });
+    });
+  };
+
   const value: AppState = {
     users,
     devices,
@@ -561,6 +602,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
     handleCreateAutomation,
     handleUpdateAutomation,
     handleDeleteAutomation,
+    handleEmergencyShutdown,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

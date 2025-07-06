@@ -17,7 +17,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Plus, AlertTriangle } from "lucide-react";
 import { useAppContext } from "@/context/app-state-context";
 import {
   Form,
@@ -47,8 +58,12 @@ const automationFormSchema = z.object({
 type AutomationFormValues = z.infer<typeof automationFormSchema>;
 
 export default function AutomationsPage() {
-  const { automations, handleAutomationToggle, handleCreateAutomation } =
-    useAppContext();
+  const {
+    automations,
+    handleAutomationToggle,
+    handleCreateAutomation,
+    handleEmergencyShutdown,
+  } = useAppContext();
   const [isCreateDialogOpen, setCreateDialogOpen] = React.useState(false);
 
   const form = useForm<AutomationFormValues>({
@@ -78,133 +93,163 @@ export default function AutomationsPage() {
             Manage your smart home automation triggers.
           </p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus />
-              Create Automation
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Automation</DialogTitle>
-              <DialogDescription>
-                Set up a new rule to automate your home.
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4 py-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Automation Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Evening Wind Down"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Describe what this automation does"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="trigger"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Trigger</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+        <div className="flex gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Emergency Shutdown
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Activate Emergency Protocol?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will turn off all lights, lock all doors, and ensure all
+                  cameras are recording. This action cannot be undone in a
+                  single step.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleEmergencyShutdown}>
+                  Confirm
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus />
+                Create Automation
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Automation</DialogTitle>
+                <DialogDescription>
+                  Set up a new rule to automate your home.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4 py-4"
+                >
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Automation Name</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a trigger" />
-                          </SelectTrigger>
+                          <Input
+                            placeholder="e.g., Evening Wind Down"
+                            {...field}
+                          />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Time of Day">
-                            Time of Day
-                          </SelectItem>
-                          <SelectItem value="Motion Detected">
-                            Motion Detected
-                          </SelectItem>
-                          <SelectItem value="Device State Change">
-                            Device State Change
-                          </SelectItem>
-                          <SelectItem value="Occupancy Change">
-                            Occupancy Change
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="action"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Action</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an action" />
-                          </SelectTrigger>
+                          <Textarea
+                            placeholder="Describe what this automation does"
+                            {...field}
+                          />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Turn on Lights">
-                            Turn on Lights
-                          </SelectItem>
-                          <SelectItem value="Turn off Lights">
-                            Turn off Lights
-                          </SelectItem>
-                          <SelectItem value="Adjust Thermostat">
-                            Adjust Thermostat
-                          </SelectItem>
-                          <SelectItem value="Lock Doors">Lock Doors</SelectItem>
-                          <SelectItem value="Send Notification">
-                            Send Notification
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button type="submit">Create Automation</Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="trigger"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Trigger</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a trigger" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Time of Day">
+                              Time of Day
+                            </SelectItem>
+                            <SelectItem value="Motion Detected">
+                              Motion Detected
+                            </SelectItem>
+                            <SelectItem value="Device State Change">
+                              Device State Change
+                            </SelectItem>
+                            <SelectItem value="Occupancy Change">
+                              Occupancy Change
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="action"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Action</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an action" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Turn on Lights">
+                              Turn on Lights
+                            </SelectItem>
+                            <SelectItem value="Turn off Lights">
+                              Turn off Lights
+                            </SelectItem>
+                            <SelectItem value="Adjust Thermostat">
+                              Adjust Thermostat
+                            </SelectItem>
+                            <SelectItem value="Lock Doors">
+                              Lock Doors
+                            </SelectItem>
+                            <SelectItem value="Send Notification">
+                              Send Notification
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <DialogFooter>
+                    <Button type="submit">Create Automation</Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

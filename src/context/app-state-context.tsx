@@ -4,42 +4,20 @@
 import * as React from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
-  AirVent,
-  Bell,
-  BrainCircuit,
-  Camera,
-  Clock,
-  DoorOpen,
-  Flame,
-  Lamp,
-  Lightbulb,
-  Lock,
-  Sparkles,
-  Sunrise,
-  Sunset,
-  Tv,
-  Wind,
-  Zap,
+  AirVent, Bell, BrainCircuit, Camera, Clock, DoorOpen, Flame, Lamp, Lightbulb, Lock, Sparkles, Sunrise, Sunset, Tv, Wind, Zap
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { 
+    initializeDb, db_getUsers, db_updateUserRole, db_deleteUser, db_getUserByEmail, db_updateUserLoginTime,
+    db_getDevices, db_getDevice, db_updateDevice, db_createDevice, db_deleteDevice,
+    db_getRoomsRaw, db_createRoom, db_updateRoom, db_deleteRoom, db_setAllLights,
+    db_getScenes, db_createScene, db_updateScene, db_deleteScene,
+    db_getAutomations, db_toggleAutomation, db_createAutomation, db_updateAutomation, db_deleteAutomation
+} from '@/lib/database';
 
 // Helper to map string names to actual Icon components
 const iconMap: { [key: string]: LucideIcon } = {
-  Lightbulb,
-  Lamp,
-  Lock,
-  Camera,
-  AirVent,
-  DoorOpen,
-  Bell,
-  Sunrise,
-  Sunset,
-  Tv,
-  BrainCircuit,
-  Clock,
-  Sparkles,
-  Wind,
-  Zap,
+  Lightbulb, Lamp, Lock, Camera, AirVent, DoorOpen, Bell, Sunrise, Sunset, Tv, BrainCircuit, Clock, Sparkles, Wind, Zap,
 };
 const getIcon = (name: string): LucideIcon => iconMap[name] || Zap;
 
@@ -84,12 +62,14 @@ export interface Scene {
   id: string;
   name: string;
   icon: LucideIcon;
+  iconName: string;
   description: string;
 }
 
 export interface Automation {
   id: string;
   icon: LucideIcon;
+  iconName: string;
   name: string;
   description: string;
   trigger: string;
@@ -159,93 +139,75 @@ interface AppState {
 // Context
 const AppContext = React.createContext<AppState | undefined>(undefined);
 
-// Initial Data
-const initialUsers: UserProfile[] = [
-  { id: "1", name: "Admin User", email: "admin@example.com", role: "admin", lastLogin: "2 hours ago" },
-  { id: "2", name: "Jane Doe", email: "jane.doe@example.com", role: "user", lastLogin: "1 day ago" },
-];
-
-const initialDevices: Device[] = [
-  { id: '1', name: 'Living Room Lights', location: 'Living Room', iconName: 'Lightbulb', type: 'light', status: 'On', time: '2 min ago', active: true, statusVariant: 'default' },
-  { id: '2', name: 'Kitchen Lights', location: 'Kitchen', iconName: 'Lamp', type: 'light', status: 'Off', time: '5 min ago', active: false, statusVariant: 'secondary' },
-  { id: '3', name: 'Bedroom Lights', location: 'Bedroom', iconName: 'Lightbulb', type: 'light', status: 'On', time: '1 min ago', active: true, statusVariant: 'default' },
-  { id: '4', name: 'Front Door Lock', location: 'Entrance', iconName: 'Lock', type: 'lock', status: 'Locked', time: '10 min ago', active: true, statusVariant: 'default' },
-  { id: '5', name: 'Back Door Lock', location: 'Garden', iconName: 'Lock', type: 'lock', status: 'Unlocked', time: '15 min ago', active: false, statusVariant: 'destructive' },
-  { id: '6', name: 'Security Camera 1', location: 'Living Room', iconName: 'Camera', type: 'camera', status: 'Recording', time: 'Just now', active: true, statusVariant: 'default' },
-  { id: '7', name: 'Security Camera 2', location: 'Kitchen', iconName: 'Camera', type: 'camera', status: 'Recording', time: 'Just now', active: true, statusVariant: 'default' },
-  { id: '8', name: 'Living Room AC', location: 'Living Room', iconName: 'AirVent', type: 'ac', status: 'Off', time: '30 min ago', active: false, statusVariant: 'secondary' },
-  { id: '9', name: 'Bedroom AC', location: 'Bedroom', iconName: 'AirVent', type: 'ac', status: 'Cooling', time: '5 min ago', active: true, statusVariant: 'default' },
-].map(d => ({ ...d, icon: getIcon(d.iconName) }));
-
-const initialRooms: Room[] = [
-    { name: "Living Room", temp: 22, lightsOn: 1, lightsTotal: 2, devices: [ { name: "Living Room Lights", type: "Light", icon: getIcon('Lightbulb'), active: true }, { name: "Accent Lights", type: "Light", icon: getIcon('Lamp'), active: false }, { name: "Security Camera 1", type: "Camera", icon: getIcon('Camera'), active: true }, { name: "Living Room AC", type: "AC", icon: getIcon('AirVent'), active: false }, ], },
-    { name: "Kitchen", temp: 24, lightsOn: 2, lightsTotal: 2, devices: [ { name: "Kitchen Lights", type: "Light", icon: getIcon('Lightbulb'), active: true }, { name: "Under Cabinet", type: "Light", icon: getIcon('Lamp'), active: true }, { name: "Security Camera 2", type: "Camera", icon: getIcon('Camera'), active: false }, ], },
-    { name: "Bedroom", temp: 20, lightsOn: 1, lightsTotal: 2, devices: [ { name: "Bedroom Lights", type: "Light", icon: getIcon('Lightbulb'), active: false }, { name: "Bedside Lamp", type: "Light", icon: getIcon('Lamp'), active: true }, { name: "Bedroom Door Lock", type: "Door", icon: getIcon('Lock'), active: true }, { name: "Bedroom AC", type: "AC", icon: getIcon('AirVent'), active: false }, ], },
-    { name: "Entrance", temp: 23, lightsOn: 1, lightsTotal: 1, devices: [ { name: "Entrance Light", type: "Light", icon: getIcon('Lightbulb'), active: true }, { name: "Front Door Lock", type: "Door", icon: getIcon('DoorOpen'), active: false }, { name: "Doorbell Camera", type: "Camera", icon: getIcon('Bell'), active: false }, ], },
-];
-
-
-const initialScenes: Scene[] = [
-  { id: '1', name: "Good Morning", icon: getIcon('Sunrise'), description: "Gradually brighten lights and start your day." },
-  { id: '2', name: "Movie Night", icon: getIcon('Tv'), description: "Dim the lights and set the mood for a movie." },
-  { id: '3', name: "Focus Time", icon: getIcon('BrainCircuit'), description: "Bright, cool lighting to help you concentrate." },
-  { id: '4', name: "Good Night", icon: getIcon('Sunset'), description: "Turn off all lights and secure the house." },
-];
-
-const initialAutomations: Automation[] = [
-  { id: '1', icon: getIcon('Clock'), name: "Morning Routine", description: "Turn on lights when motion detected after 6 AM", trigger: "Motion + Time", action: "Turn on lights", status: "Active", lastRun: "This morning", active: true, },
-  { id: '2', icon: getIcon('Sparkles'), name: "Energy Saver", description: "Turn off lights when no motion for 10 minutes", trigger: "No motion", action: "Turn off lights", status: "Active", lastRun: "2 hours ago", active: true, },
-  { id: '3', icon: getIcon('Clock'), name: "Security Mode", description: "Lock doors and arm cameras at 11 PM", trigger: "11:00 PM", action: "Lock & Arm", status: "Paused", lastRun: "Yesterday", active: false, },
-  { id: '4', icon: getIcon('Wind'), name: "Climate Control", description: "Adjust temperature based on occupancy", trigger: "Occupancy change", action: "Adjust AC", status: "Active", lastRun: "1 hour ago", active: true, },
-];
-
 
 export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [users, setUsers] = React.useState<UserProfile[]>(initialUsers);
-  const [devices, setDevices] = React.useState<Device[]>(initialDevices);
-  const [rooms, setRooms] = React.useState<Room[]>(initialRooms);
-  const [scenes, setScenes] = React.useState<Scene[]>(initialScenes);
-  const [automations, setAutomations] = React.useState<Automation[]>(initialAutomations);
+  const [users, setUsers] = React.useState<UserProfile[]>([]);
+  const [devices, setDevices] = React.useState<Device[]>([]);
+  const [rooms, setRooms] = React.useState<Room[]>([]);
+  const [scenes, setScenes] = React.useState<Scene[]>([]);
+  const [automations, setAutomations] = React.useState<Automation[]>([]);
   const { toast } = useToast();
 
   const [user, setUser] = React.useState<UserProfile | null>(null);
   const [authLoading, setAuthLoading] = React.useState(true);
   const [isAdmin, setIsAdmin] = React.useState(false);
+  const [isInitialized, setIsInitialized] = React.useState(false);
 
-  React.useEffect(() => {
-    // In a real app, you would check a session token. For this mock, we just stop loading.
-    setAuthLoading(false);
+  const fetchData = React.useCallback(async () => {
+    const dbUsers = await db_getUsers();
+    const dbDevices = await db_getDevices();
+    const dbRoomsRaw = await db_getRoomsRaw();
+    const dbScenes = await db_getScenes();
+    const dbAutomations = await db_getAutomations();
+    
+    const transformedDevices: Device[] = dbDevices.map(d => ({...d, icon: getIcon(d.iconName)}));
+    
+    const transformedRooms: Room[] = dbRoomsRaw.map(room => {
+        const roomDevices = transformedDevices.filter(d => d.location === room.name);
+        const lights = roomDevices.filter(d => d.type.toLowerCase().includes('light'));
+        return {
+            ...room,
+            devices: roomDevices.map(rd => ({ name: rd.name, type: rd.type, icon: rd.icon, active: rd.active })),
+            lightsOn: lights.filter(l => l.active).length,
+            lightsTotal: lights.length,
+        };
+    });
+
+    setUsers(dbUsers.map(u => ({...u, lastLogin: new Date(u.lastLogin).toLocaleString() })));
+    setDevices(transformedDevices);
+    setRooms(transformedRooms);
+    setScenes(dbScenes.map(s => ({...s, icon: getIcon(s.iconName)})));
+    setAutomations(dbAutomations.map(a => ({...a, icon: getIcon(a.iconName)})));
   }, []);
 
+  React.useEffect(() => {
+    async function init() {
+      await initializeDb();
+      await fetchData();
+      setIsInitialized(true);
+      // Mock auth check
+      setAuthLoading(false);
+    }
+    init();
+  }, [fetchData]);
+
+
   const login = async (email: string, password: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => { // Simulate network delay
-            if (email === 'admin@example.com' && password === 'password') {
-                const adminUser = users.find(u => u.role === 'admin');
-                if (adminUser) {
-                    setUser(adminUser);
-                    setIsAdmin(true);
-                    toast({ title: "Login Successful", description: "Welcome back, Admin!" });
-                    resolve();
-                } else {
-                    reject(new Error("Admin user not found in initial data."));
-                }
-            } else if (email === 'jane.doe@example.com' && password === 'password') {
-                const standardUser = users.find(u => u.email === 'jane.doe@example.com');
-                if (standardUser) {
-                    setUser(standardUser);
-                    setIsAdmin(false);
-                    toast({ title: "Login Successful", description: `Welcome back, ${standardUser.name}!` });
-                    resolve();
-                } else {
-                     reject(new Error("User not found in initial data."));
-                }
-            } else {
-                reject(new Error("Invalid email or password."));
-            }
-        }, 500);
+    return new Promise(async (resolve, reject) => {
+        // In a real app, password should be hashed and checked
+        const dbUser = await db_getUserByEmail(email);
+        if (dbUser) {
+            await db_updateUserLoginTime(dbUser.id);
+            const loggedInUser = {...dbUser, lastLogin: new Date().toLocaleString()};
+            setUser(loggedInUser);
+            setIsAdmin(dbUser.role === 'admin');
+            toast({ title: "Login Successful", description: `Welcome back, ${dbUser.name}!` });
+            resolve();
+        } else {
+            reject(new Error("Invalid email or password."));
+        }
     });
   };
 
@@ -257,320 +219,201 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
 
 
   // User Handlers
-  const handleUpdateUserRole = (userId: string, role: "admin" | "user") => {
-    setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, role } : user)));
+  const handleUpdateUserRole = async (userId: string, role: "admin" | "user") => {
+    await db_updateUserRole(userId, role);
+    await fetchData();
     toast({ title: "User Role Updated" });
   };
-  const handleDeleteUser = (userId: string) => {
-    setUsers((prev) => prev.filter((user) => user.id !== userId));
+  const handleDeleteUser = async (userId: string) => {
+    await db_deleteUser(userId);
+    await fetchData();
     toast({ title: "User Deleted" });
   };
 
   // Device Handlers
-  const handleDeviceToggle = (deviceId: string, roomName?: string) => {
-    let toggledDeviceName = "";
-    let toggledDeviceType = "";
-    let newActiveState: boolean | undefined;
+  const handleDeviceToggle = async (deviceId: string) => {
+    const device = await db_getDevice(deviceId);
+    if (!device) return;
+
+    const newActiveState = !device.active;
+    let newStatus = device.status;
+    let newStatusVariant: any = device.statusVariant;
   
-    setDevices((prevDevices) =>
-      prevDevices.map((device) => {
-        if (device.id === deviceId) {
-          newActiveState = !device.active;
-          toggledDeviceName = device.name;
-          toggledDeviceType = device.type;
-          let newStatus = device.status;
-          let newStatusVariant: any = device.statusVariant;
-  
-          if (device.type.toLowerCase().includes("light")) {
-            newStatus = newActiveState ? "On" : "Off";
-            newStatusVariant = newActiveState ? "default" : "secondary";
-          } else if (device.type.toLowerCase().includes("lock")) {
-            newStatus = newActiveState ? "Locked" : "Unlocked";
-            newStatusVariant = newActiveState ? "default" : "destructive";
-          } else if (device.type.toLowerCase().includes("camera")) {
-            newStatus = newActiveState ? "Recording" : "Off";
-            newStatusVariant = newActiveState ? "default" : "secondary";
-          } else if (device.type.toLowerCase().includes("ac")) {
-            newStatus = newActiveState ? "Cooling" : "Off";
-            newStatusVariant = newActiveState ? "default" : "secondary";
-          }
-  
-          return { ...device, active: newActiveState, status: newStatus, statusVariant: newStatusVariant, time: "Just now" };
-        }
-        return device;
-      })
-    );
-  
-    if (roomName && toggledDeviceName && typeof newActiveState !== 'undefined') {
-      setRooms(prevRooms => prevRooms.map(room => {
-        if (room.name === roomName) {
-          let lightsOnDelta = 0;
-          const updatedRoomDevices = room.devices.map(rd => {
-            if (rd.name === toggledDeviceName) {
-              if (toggledDeviceType.toLowerCase().includes('light')) {
-                lightsOnDelta = newActiveState ? 1 : -1;
-              }
-              return { ...rd, active: newActiveState! };
-            }
-            return rd;
-          });
-          const newLightsOn = Math.max(0, room.lightsOn + lightsOnDelta);
-          return { ...room, devices: updatedRoomDevices, lightsOn: newLightsOn };
-        }
-        return room;
-      }));
+    if (device.type.toLowerCase().includes("light")) {
+        newStatus = newActiveState ? "On" : "Off";
+        newStatusVariant = newActiveState ? "default" : "secondary";
+    } else if (device.type.toLowerCase().includes("lock")) {
+        newStatus = newActiveState ? "Locked" : "Unlocked";
+        newStatusVariant = newActiveState ? "default" : "destructive";
+    } else if (device.type.toLowerCase().includes("camera")) {
+        newStatus = newActiveState ? "Recording" : "Off";
+        newStatusVariant = newActiveState ? "default" : "secondary";
+    } else if (device.type.toLowerCase().includes("ac")) {
+        newStatus = newActiveState ? "Cooling" : "Off";
+        newStatusVariant = newActiveState ? "default" : "secondary";
     }
-  };
-
-  const handleAllLights = (roomName: string, turnOn: boolean) => {
-    toast({ title: `All lights in ${roomName} turned ${turnOn ? "on" : "off"}.` });
     
-    setDevices(prevDevices => prevDevices.map(d => {
-        if (d.location === roomName && d.type.toLowerCase().includes('light')) {
-            return {
-                ...d,
-                active: turnOn,
-                status: turnOn ? 'On' : 'Off',
-                statusVariant: turnOn ? 'default' : 'secondary',
-            };
-        }
-        return d;
-    }));
-
-    setRooms(prevRooms => prevRooms.map(room => {
-        if (room.name === roomName) {
-            const updatedRoomDevices = room.devices.map(rd => {
-                if (rd.type.toLowerCase().includes('light')) {
-                    return { ...rd, active: turnOn };
-                }
-                return rd;
-            });
-            const newLightsOn = turnOn ? room.lightsTotal : 0;
-            return { ...room, devices: updatedRoomDevices, lightsOn: newLightsOn };
-        }
-        return room;
-    }));
+    await db_updateDevice({ id: deviceId, active: newActiveState, status: newStatus, statusVariant: newStatusVariant, time: "Just now" });
+    await fetchData();
   };
 
-  const handleCreateDevice = (data: NewDeviceData) => {
-    const newDevice: Device = {
-        ...data,
-        id: crypto.randomUUID(),
-        active: false,
-        status: "Off",
-        statusVariant: "secondary",
-        time: 'Just now',
-        iconName: data.type,
-        icon: getIcon(data.type),
-    };
-    setDevices(prev => [...prev, newDevice]);
+  const handleAllLights = async (roomName: string, turnOn: boolean) => {
+    await db_setAllLights(roomName, turnOn);
+    await fetchData();
+    toast({ title: `All lights in ${roomName} turned ${turnOn ? "on" : "off"}.` });
+  };
+
+  const handleCreateDevice = async (data: NewDeviceData) => {
+    await db_createDevice(data);
+    await fetchData();
     toast({ title: "Device Created" });
   };
 
-  const handleUpdateDevice = (id: string, data: Partial<NewDeviceData>) => {
-    setDevices(prev => prev.map(d => d.id === id ? { ...d, ...data, icon: getIcon(data.type || d.type) } as Device : d));
+  const handleUpdateDevice = async (id: string, data: Partial<NewDeviceData>) => {
+    await db_updateDevice({ id, ...data });
+    await fetchData();
     toast({ title: "Device Updated" });
   };
 
-  const handleDeleteDevice = (id: string) => {
-    setDevices(prev => prev.filter(d => d.id !== id));
+  const handleDeleteDevice = async (id: string) => {
+    await db_deleteDevice(id);
+    await fetchData();
     toast({ title: "Device Deleted" });
   };
   
   // Room Handlers
-  const handleCreateRoom = (data: { name: string; temp: number }) => {
-    const newRoom: Room = {
-        ...data,
-        lightsOn: 0,
-        lightsTotal: 0,
-        devices: [],
-    };
-    setRooms(prev => [...prev, newRoom]);
+  const handleCreateRoom = async (data: { name: string; temp: number }) => {
+    await db_createRoom(data);
+    await fetchData();
     toast({ title: "Room Created" });
   };
 
-  const handleUpdateRoom = (name: string, data: { name: string; temp: number }) => {
-    setRooms(prev => prev.map(r => r.name === name ? {...r, ...data} : r));
+  const handleUpdateRoom = async (name: string, data: { name: string; temp: number }) => {
+    await db_updateRoom(name, data);
+    await fetchData();
     toast({ title: "Room Updated" });
   };
 
-  const handleDeleteRoom = (name: string) => {
-    setRooms(prev => prev.filter(r => r.name !== name));
+  const handleDeleteRoom = async (name: string) => {
+    await db_deleteRoom(name);
+    await fetchData();
     toast({ title: "Room Deleted" });
   };
 
   // Scene Handlers
-  const handleActivateScene = (sceneName: string) => {
+  const handleActivateScene = async (sceneName: string) => {
     toast({ title: "Scene Activated", description: `The "${sceneName}" scene has been activated.` });
 
-    let updatedDevices = [...devices]; 
+    const currentDevices = await db_getDevices();
+    let updatePromises: Promise<any>[] = [];
+
+    const getUpdate = (d: any, active: boolean, status: string, statusVariant: string) => ({...d, active, status, statusVariant});
 
     switch (sceneName) {
         case "Good Morning":
-            updatedDevices = updatedDevices.map(d => {
+            currentDevices.forEach(d => {
                 if (d.name === 'Living Room Lights' || d.name === 'Bedroom Lights') {
-                    return { ...d, active: true, status: 'On', statusVariant: 'default' };
+                    updatePromises.push(db_updateDevice(getUpdate(d, true, 'On', 'default')));
+                } else if (d.name === 'Front Door Lock') {
+                    updatePromises.push(db_updateDevice(getUpdate(d, false, 'Unlocked', 'destructive')));
                 }
-                if (d.name === 'Front Door Lock') {
-                    return { ...d, active: false, status: 'Unlocked', statusVariant: 'destructive' };
-                }
-                return d;
             });
             break;
-        
         case "Movie Night":
-            updatedDevices = updatedDevices.map(d => {
+             currentDevices.forEach(d => {
                 if (d.name === 'Kitchen Lights' || d.name === 'Bedroom Lights') {
-                    return { ...d, active: false, status: 'Off', statusVariant: 'secondary' };
+                    updatePromises.push(db_updateDevice(getUpdate(d, false, 'Off', 'secondary')));
+                } else if (d.name === 'Living Room Lights') {
+                    updatePromises.push(db_updateDevice(getUpdate(d, true, 'On', 'default')));
                 }
-                if (d.name === 'Living Room Lights') {
-                    return { ...d, active: true, status: 'On', statusVariant: 'default' };
-                }
-                return d;
             });
             break;
-
         case "Focus Time":
-            updatedDevices = updatedDevices.map(d => {
+            currentDevices.forEach(d => {
                 if (d.type.toLowerCase().includes('light')) {
-                    return { ...d, active: true, status: 'On', statusVariant: 'default' };
+                     updatePromises.push(db_updateDevice(getUpdate(d, true, 'On', 'default')));
                 }
-                return d;
             });
             break;
-
         case "Good Night":
-            updatedDevices = updatedDevices.map(d => {
+            currentDevices.forEach(d => {
                 if (d.type.toLowerCase().includes('light')) {
-                    return { ...d, active: false, status: 'Off', statusVariant: 'secondary' };
+                    updatePromises.push(db_updateDevice(getUpdate(d, false, 'Off', 'secondary')));
+                } else if (d.type.toLowerCase().includes('lock')) {
+                    updatePromises.push(db_updateDevice(getUpdate(d, true, 'Locked', 'default')));
                 }
-                if (d.type.toLowerCase().includes('lock')) {
-                    return { ...d, active: true, status: 'Locked', statusVariant: 'default' };
-                }
-                return d;
             });
-            break;
-        
-        default:
             break;
     }
 
-    setDevices(updatedDevices);
-
-    setRooms(prevRooms => {
-        return prevRooms.map(room => {
-            let newLightsOn = 0;
-            const updatedRoomDevices = room.devices.map(rd => {
-                const mainDevice = updatedDevices.find(d => d.name === rd.name);
-                if (mainDevice) {
-                    if (mainDevice.type.toLowerCase().includes('light') && mainDevice.active) {
-                        newLightsOn++;
-                    }
-                    return { ...rd, active: mainDevice.active };
-                }
-                return rd;
-            });
-
-            return { ...room, devices: updatedRoomDevices, lightsOn: newLightsOn };
-        });
-    });
+    await Promise.all(updatePromises);
+    await fetchData();
   };
 
-  const handleCreateScene = (name: string, description: string) => {
-    const newScene: Scene = {
-      id: crypto.randomUUID(),
-      name,
-      description,
-      icon: getIcon("Sparkles"),
-    };
-    setScenes((prev) => [...prev, newScene]);
+  const handleCreateScene = async (name: string, description: string) => {
+    await db_createScene(name, description);
+    await fetchData();
     toast({ title: "Scene Created" });
   };
 
-  const handleUpdateScene = (id: string, data: { name: string, description: string }) => {
-    setScenes(prev => prev.map(s => s.id === id ? {...s, ...data} : s));
+  const handleUpdateScene = async (id: string, data: { name: string, description: string }) => {
+    await db_updateScene(id, data);
+    await fetchData();
     toast({ title: "Scene Updated" });
   };
 
-  const handleDeleteScene = (id: string) => {
-    setScenes(prev => prev.filter(s => s.id !== id));
+  const handleDeleteScene = async (id: string) => {
+    await db_deleteScene(id);
+    await fetchData();
     toast({ title: "Scene Deleted" });
   };
   
   // Automation Handlers
-  const handleAutomationToggle = (automationId: string, forceState?: boolean) => {
-    setAutomations((prev) =>
-      prev.map((auto) => {
-        if (auto.id === automationId) {
-          const newActiveState = forceState !== undefined ? forceState : !auto.active;
-          return { ...auto, active: newActiveState, status: newActiveState ? "Active" : "Paused" };
-        }
-        return auto;
-      })
-    );
+  const handleAutomationToggle = async (automationId: string, forceState?: boolean) => {
+    await db_toggleAutomation(automationId, forceState);
+    await fetchData();
   };
 
-  const handleCreateAutomation = (data: NewAutomationData) => {
-    const newAutomation: Automation = {
-        id: crypto.randomUUID(),
-        ...data,
-        icon: getIcon('Zap'),
-        active: true,
-        status: "Active",
-        lastRun: "Never",
-    };
-    setAutomations(prev => [...prev, newAutomation]);
+  const handleCreateAutomation = async (data: NewAutomationData) => {
+    await db_createAutomation(data);
+    await fetchData();
     toast({ title: "Automation Created" });
   };
 
-  const handleUpdateAutomation = (id: string, data: Partial<NewAutomationData>) => {
-    setAutomations(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
+  const handleUpdateAutomation = async (id: string, data: Partial<NewAutomationData>) => {
+    await db_updateAutomation(id, data);
+    await fetchData();
     toast({ title: "Automation Updated" });
   };
 
-  const handleDeleteAutomation = (id: string) => {
-    setAutomations(prev => prev.filter(a => a.id !== id));
+  const handleDeleteAutomation = async (id: string) => {
+    await db_deleteAutomation(id);
+    await fetchData();
     toast({ title: "Automation Deleted" });
   };
 
-  const handleEmergencyShutdown = () => {
+  const handleEmergencyShutdown = async () => {
     toast({
         title: "Emergency Protocol Activated",
         description: "All lights are off, doors are locked, and cameras are active.",
         variant: "destructive",
     });
 
-    const updatedDevices = devices.map(d => {
+    const currentDevices = await db_getDevices();
+    let updatePromises: Promise<any>[] = [];
+
+    currentDevices.forEach(d => {
         if (d.type.toLowerCase().includes('light')) {
-            return { ...d, active: false, status: 'Off', statusVariant: 'secondary' };
+            updatePromises.push(db_updateDevice({ id: d.id, active: false, status: 'Off', statusVariant: 'secondary' }));
+        } else if (d.type.toLowerCase().includes('lock')) {
+            updatePromises.push(db_updateDevice({ id: d.id, active: true, status: 'Locked', statusVariant: 'default' }));
+        } else if (d.type.toLowerCase().includes('camera')) {
+            updatePromises.push(db_updateDevice({ id: d.id, active: true, status: 'Recording', statusVariant: 'default' }));
         }
-        if (d.type.toLowerCase().includes('lock')) {
-            return { ...d, active: true, status: 'Locked', statusVariant: 'default' };
-        }
-        if (d.type.toLowerCase().includes('camera')) {
-            return { ...d, active: true, status: 'Recording', statusVariant: 'default' };
-        }
-        return d;
     });
 
-    setDevices(updatedDevices);
-
-    setRooms(prevRooms => {
-        return prevRooms.map(room => {
-            let newLightsOn = 0;
-            const updatedRoomDevices = room.devices.map(rd => {
-                const mainDevice = updatedDevices.find(d => d.name === rd.name);
-                if (mainDevice) {
-                    if (mainDevice.type.toLowerCase().includes('light') && mainDevice.active) {
-                        newLightsOn++;
-                    }
-                    return { ...rd, active: mainDevice.active };
-                }
-                return rd;
-            });
-            return { ...room, devices: updatedRoomDevices, lightsOn: newLightsOn };
-        });
-    });
+    await Promise.all(updatePromises);
+    await fetchData();
   };
 
   const value: AppState = {
@@ -580,7 +423,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
     scenes,
     automations,
     user,
-    authLoading,
+    authLoading: authLoading || !isInitialized,
     isAdmin,
     login,
     logout,

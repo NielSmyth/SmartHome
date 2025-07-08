@@ -337,7 +337,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-4">
             {supported && (
-               <Button variant="ghost" size="icon" onClick={handleVoiceButtonClick} disabled={isProcessingVoice}>
+               <Button variant="ghost" size="icon" onClick={handleVoiceButtonClick} disabled={isProcessingVoice} className="hidden md:inline-flex">
                 {isProcessingVoice ? <Loader className="h-[1.2rem] w-[1.2rem] animate-spin" /> : (isListening ? <Loader className="h-[1.2rem] w-[1.2rem] animate-pulse text-red-500" /> : <Mic className="h-[1.2rem] w-[1.2rem]" />) }
                 <span className="sr-only">Voice Command</span>
               </Button>
@@ -431,6 +431,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
+        {supported && (
+            <Button
+                size="icon"
+                onClick={handleVoiceButtonClick}
+                disabled={isProcessingVoice}
+                className="md:hidden fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg z-50"
+            >
+                {isProcessingVoice ? <Loader className="h-6 w-6 animate-spin" /> : (isListening ? <Loader className="h-6 w-6 animate-pulse text-red-500" /> : <Mic className="h-6 w-6" />) }
+                <span className="sr-only">Voice Command</span>
+            </Button>
+        )}
       </SidebarInset>
     </SidebarProvider>
   );

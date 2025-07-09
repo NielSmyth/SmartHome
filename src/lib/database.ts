@@ -34,6 +34,7 @@ const initialDevices: Omit<Device, 'icon'>[] = [
   { id: '7', name: 'Security Camera 2', location: 'Kitchen', iconName: 'Camera', type: 'camera', status: 'Recording', time: 'Just now', active: true, statusVariant: 'default' },
   { id: '8', name: 'Living Room AC', location: 'Living Room', iconName: 'AirVent', type: 'ac', status: 'Off', time: '30 min ago', active: false, statusVariant: 'secondary' },
   { id: '9', name: 'Bedroom AC', location: 'Bedroom', iconName: 'AirVent', type: 'ac', status: 'Cooling', time: '5 min ago', active: true, statusVariant: 'default' },
+  { id: '10', name: 'Smart Smoke Detector', location: 'Kitchen', iconName: 'Wind', type: 'security', status: 'Online', time: 'Just now', active: true, statusVariant: 'default' },
 ];
 
 const initialRooms: Pick<Room, 'name' | 'temp'>[] = [
@@ -152,10 +153,10 @@ export async function initializeDb() {
 
 // User Actions
 export async function db_getUsers() { return (await getDb()).all('SELECT * FROM users'); }
-export async function db_updateUserRole(userId: string, role: 'admin' | 'user') { await (await getDb()).run('UPDATE users SET role = ? WHERE id = ?', role, userId); }
-export async function db_deleteUser(userId: string) { await (await getDb()).run('DELETE FROM users WHERE id = ?', userId); }
+export async function db_updateUserRole(userId: string, role: 'admin' | 'user') { (await getDb()).run('UPDATE users SET role = ? WHERE id = ?', role, userId); }
+export async function db_deleteUser(userId: string) { (await getDb()).run('DELETE FROM users WHERE id = ?', userId); }
 export async function db_getUserByEmail(email: string) { return (await getDb()).get('SELECT * FROM users WHERE email = ?', email); }
-export async function db_updateUserLoginTime(userId: string) { await (await getDb()).run('UPDATE users SET lastLogin = ? WHERE id = ?', new Date().toISOString(), userId); }
+export async function db_updateUserLoginTime(userId: string) { (await getDb()).run('UPDATE users SET lastLogin = ? WHERE id = ?', new Date().toISOString(), userId); }
 
 // Device Actions
 export async function db_getDevices() { return (await getDb()).all('SELECT * FROM devices'); }
@@ -164,33 +165,33 @@ export async function db_updateDevice(device: Partial<Device>) {
     const { id, ...fields } = device;
     const setClause = Object.keys(fields).map(key => `${key} = ?`).join(', ');
     const values = Object.values(fields);
-    await (await getDb()).run(`UPDATE devices SET ${setClause} WHERE id = ?`, ...values, id);
+    (await getDb()).run(`UPDATE devices SET ${setClause} WHERE id = ?`, ...values, id);
 }
 export async function db_createDevice(data: NewDeviceData) {
     const newDevice = { ...data, id: crypto.randomUUID(), active: false, status: 'Off', statusVariant: 'secondary', time: 'Just now', iconName: data.type };
-    await (await getDb()).run('INSERT INTO devices (id, name, location, iconName, type, status, time, active, statusVariant) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', newDevice.id, newDevice.name, newDevice.location, newDevice.iconName, newDevice.type, newDevice.status, newDevice.time, newDevice.active, newDevice.statusVariant);
+    (await getDb()).run('INSERT INTO devices (id, name, location, iconName, type, status, time, active, statusVariant) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', newDevice.id, newDevice.name, newDevice.location, newDevice.iconName, newDevice.type, newDevice.status, newDevice.time, newDevice.active, newDevice.statusVariant);
 }
-export async function db_deleteDevice(id: string) { await (await getDb()).run('DELETE FROM devices WHERE id = ?', id); }
+export async function db_deleteDevice(id: string) { (await getDb()).run('DELETE FROM devices WHERE id = ?', id); }
 
 // Room Actions
 export async function db_getRoomsRaw() { return (await getDb()).all('SELECT * FROM rooms'); }
-export async function db_createRoom(data: { name: string; temp: number }) { await (await getDb()).run('INSERT INTO rooms (name, temp) VALUES (?, ?)', data.name, data.temp); }
-export async function db_updateRoom(name: string, data: { name: string; temp: number }) { await (await getDb()).run('UPDATE rooms SET name = ?, temp = ? WHERE name = ?', data.name, data.temp, name); }
-export async function db_deleteRoom(name: string) { await (await getDb()).run('DELETE FROM rooms WHERE name = ?', name); }
+export async function db_createRoom(data: { name: string; temp: number }) { (await getDb()).run('INSERT INTO rooms (name, temp) VALUES (?, ?)', data.name, data.temp); }
+export async function db_updateRoom(name: string, data: { name: string; temp: number }) { (await getDb()).run('UPDATE rooms SET name = ?, temp = ? WHERE name = ?', data.name, data.temp, name); }
+export async function db_deleteRoom(name: string) { (await getDb()).run('DELETE FROM rooms WHERE name = ?', name); }
 export async function db_setAllLights(roomName: string, turnOn: boolean) {
     const status = turnOn ? 'On' : 'Off';
     const statusVariant = turnOn ? 'default' : 'secondary';
-    await (await getDb()).run("UPDATE devices SET active = ?, status = ?, statusVariant = ? WHERE location = ? AND type = 'light'", turnOn, status, statusVariant, roomName);
+    (await getDb()).run("UPDATE devices SET active = ?, status = ?, statusVariant = ? WHERE location = ? AND type = 'light'", turnOn, status, statusVariant, roomName);
 }
 
 // Scene Actions
 export async function db_getScenes() { return (await getDb()).all('SELECT * FROM scenes'); }
 export async function db_createScene(name: string, description: string) {
     const id = crypto.randomUUID();
-    await (await getDb()).run("INSERT INTO scenes (id, name, description, iconName) VALUES (?, ?, ?, ?)", id, name, description, 'Sparkles');
+    (await getDb()).run("INSERT INTO scenes (id, name, description, iconName) VALUES (?, ?, ?, ?)", id, name, description, 'Sparkles');
 }
-export async function db_updateScene(id: string, data: { name: string; description: string }) { await (await getDb()).run('UPDATE scenes SET name = ?, description = ? WHERE id = ?', data.name, data.description, id); }
-export async function db_deleteScene(id: string) { await (await getDb()).run('DELETE FROM scenes WHERE id = ?', id); }
+export async function db_updateScene(id: string, data: { name: string; description: string }) { (await getDb()).run('UPDATE scenes SET name = ?, description = ? WHERE id = ?', data.name, data.description, id); }
+export async function db_deleteScene(id: string) { (await getDb()).run('DELETE FROM scenes WHERE id = ?', id); }
 
 // Automation Actions
 export async function db_getAutomations() { return (await getDb()).all('SELECT * FROM automations'); }
@@ -199,16 +200,16 @@ export async function db_toggleAutomation(automationId: string, forceState?: boo
     if (!auto) return;
     const newActiveState = forceState !== undefined ? forceState : !auto.active;
     const newStatus = newActiveState ? "Active" : "Paused";
-    await (await getDb()).run('UPDATE automations SET active = ?, status = ? WHERE id = ?', newActiveState, newStatus, automationId);
+    (await getDb()).run('UPDATE automations SET active = ?, status = ? WHERE id = ?', newActiveState, newStatus, automationId);
 }
 export async function db_createAutomation(data: NewAutomationData) {
     const newAutomation = { id: crypto.randomUUID(), ...data, iconName: 'Zap', active: true, status: 'Active', lastRun: 'Never' };
-    await (await getDb()).run('INSERT INTO automations (id, name, description, trigger, action, iconName, active, status, lastRun) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', newAutomation.id, newAutomation.name, newAutomation.description, newAutomation.trigger, newAutomation.action, newAutomation.iconName, newAutomation.active, newAutomation.status, newAutomation.lastRun);
+    (await getDb()).run('INSERT INTO automations (id, name, description, trigger, action, iconName, active, status, lastRun) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', newAutomation.id, newAutomation.name, newAutomation.description, newAutomation.trigger, newAutomation.action, newAutomation.iconName, newAutomation.active, newAutomation.status, newAutomation.lastRun);
 }
 export async function db_updateAutomation(id: string, data: Partial<NewAutomationData>) {
     const { ...fields } = data;
     const setClause = Object.keys(fields).map(key => `${key} = ?`).join(', ');
     const values = Object.values(fields);
-    await (await getDb()).run(`UPDATE automations SET ${setClause} WHERE id = ?`, ...values, id);
+    (await getDb()).run(`UPDATE automations SET ${setClause} WHERE id = ?`, ...values, id);
 }
-export async function db_deleteAutomation(id: string) { await (await getDb()).run('DELETE FROM automations WHERE id = ?', id); }
+export async function db_deleteAutomation(id: string) { (await getDb()).run('DELETE FROM automations WHERE id = ?', id); }

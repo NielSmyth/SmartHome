@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -10,9 +11,11 @@ import {
   Thermometer,
   Wifi,
   Zap,
+  ShieldAlert,
 } from "lucide-react";
 
 import { analyzeSystemStatus, SystemStatusOutput } from "@/ai/flows/system-status-alerts";
+import { processSecurityEvent, SecurityEventOutput } from "@/ai/flows/security-alert-flow";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,12 +49,15 @@ const anomalyMetrics = {
 
 export default function SystemStatusPage() {
   const [analysis, setAnalysis] = React.useState<SystemStatusOutput | null>(null);
+  const [securityAlert, setSecurityAlert] = React.useState<SecurityEventOutput | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isSecurityLoading, setIsSecurityLoading] = React.useState(false);
   const { toast } = useToast();
 
   const handleCheckSystem = async (useAnomalyData: boolean) => {
     setIsLoading(true);
     setAnalysis(null);
+    setSecurityAlert(null);
     try {
       const metrics = useAnomalyData ? anomalyMetrics : healthyMetrics;
       const result = await analyzeSystemStatus({
@@ -70,6 +76,29 @@ export default function SystemStatusPage() {
     }
   };
 
+  const handleSecurityCheck = async () => {
+    setIsSecurityLoading(true);
+    setAnalysis(null);
+    setSecurityAlert(null);
+    try {
+      const result = await processSecurityEvent({
+        eventType: 'smoke',
+        location: 'Kitchen'
+      });
+      setSecurityAlert(result);
+    } catch (error) {
+      console.error("Error processing security event:", error);
+      toast({
+        title: "Error",
+        description: "Could not process security event. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSecurityLoading(false);
+    }
+  };
+
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -81,39 +110,63 @@ export default function SystemStatusPage() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>AI-Powered Diagnostics</CardTitle>
-          <CardDescription>
-            Use AI to proactively detect anomalies and get plain-language
-            explanations.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4 sm:flex-row">
-          <Button onClick={() => handleCheckSystem(false)} disabled={isLoading}>
-            {isLoading ? (
-              <Loader className="mr-2 animate-spin" />
-            ) : (
-              <CheckCircle className="mr-2" />
-            )}
-            Check with Healthy Data
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => handleCheckSystem(true)}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader className="mr-2 animate-spin" />
-            ) : (
-              <AlertCircle className="mr-2" />
-            )}
-            Check with Anomaly Data
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>AI-Powered Diagnostics</CardTitle>
+            <CardDescription>
+              Use AI to proactively detect system anomalies.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 sm:flex-row">
+            <Button onClick={() => handleCheckSystem(false)} disabled={isLoading || isSecurityLoading}>
+              {isLoading ? (
+                <Loader className="mr-2 animate-spin" />
+              ) : (
+                <CheckCircle className="mr-2" />
+              )}
+              Check Healthy Data
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleCheckSystem(true)}
+              disabled={isLoading || isSecurityLoading}
+            >
+              {isLoading ? (
+                <Loader className="mr-2 animate-spin" />
+              ) : (
+                <AlertCircle className="mr-2" />
+              )}
+              Check Anomaly Data
+            </Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Security Simulation</CardTitle>
+            <CardDescription>
+              Simulate a critical security event to test the alert system.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="destructive"
+              onClick={handleSecurityCheck}
+              disabled={isLoading || isSecurityLoading}
+            >
+              {isSecurityLoading ? (
+                <Loader className="mr-2 animate-spin" />
+              ) : (
+                <ShieldAlert className="mr-2" />
+              )}
+              Simulate Smoke Alarm
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
 
-      {isLoading && (
+
+      {(isLoading || isSecurityLoading) && (
         <div className="space-y-2">
             <p className="text-sm text-muted-foreground">Analyzing system metrics...</p>
             <Progress value={50} className="w-full animate-pulse" />
@@ -139,6 +192,26 @@ export default function SystemStatusPage() {
                 <p className="text-sm text-inherit">{analysis.recommendations}</p>
             </div>
           )}
+        </Alert>
+      )}
+
+      {securityAlert && (
+        <Alert variant="destructive">
+          <ShieldAlert className="w-4 h-4" />
+          <AlertTitle>
+            {securityAlert.alertTitle}
+          </AlertTitle>
+          <AlertDescription>
+            {securityAlert.alertDescription}
+          </AlertDescription>
+          <div className="mt-4">
+              <h3 className="font-semibold">Recommendations</h3>
+              <ul className="list-disc list-inside text-sm text-inherit">
+                {securityAlert.recommendations.map((rec, index) => (
+                    <li key={index}>{rec}</li>
+                ))}
+              </ul>
+          </div>
         </Alert>
       )}
 

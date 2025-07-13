@@ -5,7 +5,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { AppStateProvider } from '@/context/app-state-context';
 
 export const metadata: Metadata = {
-  title: 'AssistHome',
+  title: 'SmartHome',
   description: 'A smart home assistant application.',
 };
 

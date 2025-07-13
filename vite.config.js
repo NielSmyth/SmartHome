@@ -3,5 +3,5 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
     plugins: [react()],
-    base: process.env.VITE_BASE_PATH || "//smart-home-u4h5",
+    base: process.env.VITE_BASE_PATH || "//SmartHome",
 });

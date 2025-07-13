@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -84,7 +85,7 @@ export default function AutomationsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-headline">
             Automation Rules
@@ -93,7 +94,7 @@ export default function AutomationsPage() {
             Manage your smart home automation triggers.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 md:flex-row">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive">

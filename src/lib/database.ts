@@ -48,14 +48,14 @@ const initialRooms: Pick<Room, 'name' | 'temp'>[] = [
     { name: "Entrance", temp: 23 },
 ];
 
-const initialScenes: Omit<Scene, 'icon'>[] = [
+const initialScenes: Omit<Scene, 'icon' | 'iconName'>[] = [
   { id: '1', name: "Good Morning", description: "Gradually brighten lights and start your day." },
   { id: '2', name: "Movie Night", description: "Dim the lights and set the mood for a movie." },
   { id: '3', name: "Focus Time", description: "Bright, cool lighting to help you concentrate." },
   { id: '4', name: "Good Night", description: "Turn off all lights and secure the house." },
 ];
 
-const initialAutomations: Omit<Automation, 'icon'>[] = [
+const initialAutomations: Omit<Automation, 'icon' | 'iconName'>[] = [
   { id: '1', name: "Morning Routine", description: "Turn on lights when motion detected after 6 AM", trigger: "Motion + Time", action: "Turn on lights", status: "Active", lastRun: "This morning", active: true, },
   { id: '2', name: "Energy Saver", description: "Turn off lights when no motion for 10 minutes", trigger: "No motion", action: "Turn off lights", status: "Active", lastRun: "2 hours ago", active: true, },
   { id: '3', name: "Security Mode", description: "Lock doors and arm cameras at 11 PM", trigger: "11:00 PM", action: "Lock & Arm", status: "Paused", lastRun: "Yesterday", active: false, },
@@ -196,7 +196,7 @@ export async function db_createScene(name: string, description: string) {
     const id = crypto.randomUUID();
     getDb().query("INSERT INTO scenes (id, name, description, iconName) VALUES ($1, $2, $3, $4)", [id, name, description, 'Sparkles']);
 }
-export async function db_updateScene(id: string, data: { name: string; description: string }) { getDb().query('UPDATE scenes SET name = $1, description = $2 WHERE id = $3', [data.name, data.description, id]); }
+export async function db_updateScene(id: string, data: { name: string, description: string }) { getDb().query('UPDATE scenes SET name = $1, description = $2 WHERE id = $3', [data.name, data.description, id]); }
 export async function db_deleteScene(id: string) { getDb().query('DELETE FROM scenes WHERE id = $1', [id]); }
 
 // Automation Actions

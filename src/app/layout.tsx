@@ -33,6 +33,12 @@ export default function RootLayout({
             <Toaster />
           </ThemeProvider>
         </AppStateProvider>
+        <footer className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-white py-4">
+          <div className="container mx-auto text-center">
+            © 2025 Smart Home Automation
+            By Daniel Iyonagbe
+          </div>
+        </footer>
       </body>
     </html>
   );

@@ -4,7 +4,7 @@
 import * as React from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
-  AirVent, Bell, BrainCircuit, Camera, Clock, DoorOpen, Flame, Lamp, Lightbulb, Lock, Sparkles, Sunrise, Sunset, Tv, Wind, Zap
+  AirVent, Bell, BrainCircuit, Camera, Clock, DoorOpen, Flame, Lamp, Lightbulb, Lock, Shield, Sparkles, Sunrise, Sunset, Tv, Wind, Zap
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { 
@@ -17,7 +17,7 @@ import {
 
 // Helper to map string names to actual Icon components
 const iconMap: { [key: string]: LucideIcon } = {
-  Lightbulb, Lamp, Lock, Camera, AirVent, DoorOpen, Bell, Sunrise, Sunset, Tv, BrainCircuit, Clock, Sparkles, Wind, Zap,
+  Lightbulb, Lamp, Lock, Camera, AirVent, DoorOpen, Bell, Sunrise, Sunset, Tv, BrainCircuit, Clock, Sparkles, Wind, Zap, Shield
 };
 const getIcon = (name: string): LucideIcon => iconMap[name] || Zap;
 
@@ -125,8 +125,8 @@ interface AppState {
   // Scene handlers
   handleActivateScene: (sceneName: string) => void;
   handleCreateScene: (name: string, description: string) => void;
-  handleUpdateScene: (name: string, data: { name: string; description: string }) => void;
-  handleDeleteScene: (name: string) => void;
+  handleUpdateScene: (id: string, data: { name: string; description: string }) => void;
+  handleDeleteScene: (id: string) => void;
 
   // Automation handlers
   handleAutomationToggle: (automationId: string, forceState?: boolean) => void;
@@ -156,36 +156,47 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isInitialized, setIsInitialized] = React.useState(false);
 
   const fetchData = React.useCallback(async () => {
-    const dbUsers = await db_getUsers();
-    const dbDevices = await db_getDevices();
-    const dbRoomsRaw = await db_getRoomsRaw();
-    const dbScenes = await db_getScenes();
-    const dbAutomations = await db_getAutomations();
-    
-    const transformedDevices: Device[] = dbDevices.map(d => ({...d, icon: getIcon(d.iconName)}));
-    
-    const transformedRooms: Room[] = dbRoomsRaw.map(room => {
-        const roomDevices = transformedDevices.filter(d => d.location === room.name);
-        const lights = roomDevices.filter(d => d.type.toLowerCase().includes('light'));
-        return {
-            ...room,
-            devices: roomDevices.map(rd => ({ name: rd.name, type: rd.type, icon: rd.icon, active: rd.active })),
-            lightsOn: lights.filter(l => l.active).length,
-            lightsTotal: lights.length,
-        };
-    });
+    try {
+        const dbUsers = await db_getUsers();
+        const dbDevices = await db_getDevices();
+        const dbRoomsRaw = await db_getRoomsRaw();
+        const dbScenes = await db_getScenes();
+        const dbAutomations = await db_getAutomations();
+        
+        const transformedDevices: Device[] = dbDevices.map(d => ({...d, icon: getIcon(d.iconName)}));
+        
+        const transformedRooms: Room[] = dbRoomsRaw.map(room => {
+            const roomDevices = transformedDevices.filter(d => d.location === room.name);
+            const lights = roomDevices.filter(d => d.type.toLowerCase().includes('light'));
+            return {
+                ...room,
+                devices: roomDevices.map(rd => ({ name: rd.name, type: rd.type, icon: rd.icon, active: rd.active })),
+                lightsOn: lights.filter(l => l.active).length,
+                lightsTotal: lights.length,
+            };
+        });
 
-    setUsers(dbUsers.map(u => ({...u, lastLogin: new Date(u.lastLogin).toLocaleString() })));
-    setDevices(transformedDevices);
-    setRooms(transformedRooms);
-    setScenes(dbScenes.map(s => ({...s, icon: getIcon(s.iconName)})));
-    setAutomations(dbAutomations.map(a => ({...a, icon: getIcon(a.iconName)})));
+        setUsers(dbUsers.map(u => ({...u, lastLogin: new Date(u.lastLogin).toLocaleString() })));
+        setDevices(transformedDevices);
+        setRooms(transformedRooms);
+        setScenes(dbScenes.map(s => ({...s, icon: getIcon(s.iconName)})));
+        setAutomations(dbAutomations.map(a => ({...a, icon: getIcon(a.iconName)})));
+        return true;
+    } catch (e) {
+        console.error("Fetch data failed, likely DB not initialized.", e);
+        return false;
+    }
   }, []);
 
   React.useEffect(() => {
     async function init() {
-      await initializeDb();
-      await fetchData();
+      const success = await fetchData();
+      if (!success) {
+          console.log("Database not ready, initializing...");
+          await initializeDb();
+          console.log("Database initialized, retrying fetch.");
+          await fetchData();
+      }
       setIsInitialized(true);
       // Mock auth check
       setAuthLoading(false);
@@ -203,6 +214,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
             const loggedInUser = {...dbUser, lastLogin: new Date().toLocaleString()};
             setUser(loggedInUser);
             setIsAdmin(dbUser.role === 'admin');
+            await fetchData(); // re-fetch data on login
             toast({ title: "Login Successful", description: `Welcome back, ${dbUser.name}!` });
             resolve();
         } else {

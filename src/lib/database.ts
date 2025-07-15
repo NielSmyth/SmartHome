@@ -4,19 +4,22 @@
 import { Pool } from 'pg';
 import type { UserProfile, Device, Room, Scene, Automation, NewDeviceData, NewAutomationData } from '@/context/app-state-context';
 
-// Singleton pattern for the database connection pool
-let pool: Pool | null = null;
+// Use a global variable to store the pool, ensuring it's a singleton.
+// This is a common pattern in serverless environments like Next.js.
+declare global {
+    var _pool: Pool | undefined;
+}
 
 function getDb() {
-    if (!pool) {
+    if (!global._pool) {
         if (!process.env.POSTGRES_URL) {
             throw new Error("POSTGRES_URL environment variable is not set.");
         }
-        pool = new Pool({
+        global._pool = new Pool({
             connectionString: process.env.POSTGRES_URL,
         });
     }
-    return pool;
+    return global._pool;
 }
 
 // Initial data for seeding the database

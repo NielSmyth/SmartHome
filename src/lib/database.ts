@@ -1,21 +1,25 @@
 
 'use server';
 
-import { open } from 'sqlite';
-import sqlite3 from 'sqlite3';
+import { Pool } from 'pg';
 import type { UserProfile, Device, Room, Scene, Automation, NewDeviceData, NewAutomationData } from '@/context/app-state-context';
 
-// Singleton pattern for the database connection
-let db = null;
+// Use a global variable to store the pool, ensuring it's a singleton.
+// This is a common pattern in serverless environments like Next.js.
+declare global {
+    var _pool: Pool | undefined;
+}
 
-async function getDb() {
-    if (!db) {
-        db = await open({
-            filename: './database.db',
-            driver: sqlite3.Database,
+function getDb() {
+    if (!global._pool) {
+        if (!process.env.POSTGRES_URL) {
+            throw new Error("POSTGRES_URL environment variable is not set.");
+        }
+        global._pool = new Pool({
+            connectionString: process.env.POSTGRES_URL,
         });
     }
-    return db;
+    return global._pool;
 }
 
 // Initial data for seeding the database
@@ -42,174 +46,180 @@ const initialRooms: Pick<Room, 'name' | 'temp'>[] = [
     { name: "Kitchen", temp: 24 },
     { name: "Bedroom", temp: 20 },
     { name: "Entrance", temp: 23 },
+    { name: "Garden", temp: 25 },
 ];
 
 const initialScenes: Omit<Scene, 'icon'>[] = [
-  { id: '1', name: "Good Morning", description: "Gradually brighten lights and start your day." },
-  { id: '2', name: "Movie Night", description: "Dim the lights and set the mood for a movie." },
-  { id: '3', name: "Focus Time", description: "Bright, cool lighting to help you concentrate." },
-  { id: '4', name: "Good Night", description: "Turn off all lights and secure the house." },
+  { id: '1', name: "Good Morning", description: "Gradually brighten lights and start your day.", iconName: 'Sunrise' },
+  { id: '2', name: "Movie Night", description: "Dim the lights and set the mood for a movie.", iconName: 'Tv' },
+  { id: '3', name: "Focus Time", description: "Bright, cool lighting to help you concentrate.", iconName: 'BrainCircuit' },
+  { id: '4', name: "Good Night", description: "Turn off all lights and secure the house.", iconName: 'Sunset' },
 ];
 
 const initialAutomations: Omit<Automation, 'icon'>[] = [
-  { id: '1', name: "Morning Routine", description: "Turn on lights when motion detected after 6 AM", trigger: "Motion + Time", action: "Turn on lights", status: "Active", lastRun: "This morning", active: true, },
-  { id: '2', name: "Energy Saver", description: "Turn off lights when no motion for 10 minutes", trigger: "No motion", action: "Turn off lights", status: "Active", lastRun: "2 hours ago", active: true, },
-  { id: '3', name: "Security Mode", description: "Lock doors and arm cameras at 11 PM", trigger: "11:00 PM", action: "Lock & Arm", status: "Paused", lastRun: "Yesterday", active: false, },
-  { id: '4', name: "Climate Control", description: "Adjust temperature based on occupancy", trigger: "Occupancy change", action: "Adjust AC", status: "Active", lastRun: "1 hour ago", active: true, },
+  { id: '1', name: "Morning Routine", description: "Turn on lights when motion detected after 6 AM", trigger: "Motion + Time", action: "Turn on lights", status: "Active", lastRun: "This morning", active: true, iconName: 'Clock' },
+  { id: '2', name: "Energy Saver", description: "Turn off lights when no motion for 10 minutes", trigger: "No motion", action: "Turn off lights", status: "Active", lastRun: "2 hours ago", active: true, iconName: 'Zap' },
+  { id: '3', name: "Security Mode", description: "Lock doors and arm cameras at 11 PM", trigger: "11:00 PM", action: "Lock & Arm", status: "Paused", lastRun: "Yesterday", active: false, iconName: 'Shield' },
+  { id: '4', name: "Climate Control", description: "Adjust temperature based on occupancy", trigger: "Occupancy change", action: "Adjust AC", status: "Active", lastRun: "1 hour ago", active: true, iconName: 'Wind' },
 ];
 
 export async function initializeDb() {
-    const db = await getDb();
-    
-    // Create Tables
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            email TEXT UNIQUE,
-            role TEXT,
-            lastLogin TEXT
-        );
-        CREATE TABLE IF NOT EXISTS devices (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            location TEXT,
-            iconName TEXT,
-            type TEXT,
-            status TEXT,
-            time TEXT,
-            active BOOLEAN,
-            statusVariant TEXT
-        );
-        CREATE TABLE IF NOT EXISTS rooms (
-            name TEXT PRIMARY KEY,
-            temp REAL
-        );
-        CREATE TABLE IF NOT EXISTS scenes (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            iconName TEXT,
-            description TEXT
-        );
-        CREATE TABLE IF NOT EXISTS automations (
-            id TEXT PRIMARY KEY,
-            iconName TEXT,
-            name TEXT,
-            description TEXT,
-            trigger TEXT,
-            action TEXT,
-            status TEXT,
-            lastRun TEXT,
-            active BOOLEAN
-        );
-    `);
+    const db = getDb();
+    const client = await db.connect();
 
-    // Seed Data
-    const usersCount = await db.get('SELECT COUNT(*) as count FROM users');
-    if (usersCount.count === 0) {
-        const stmt = await db.prepare('INSERT INTO users (id, name, email, role, lastLogin) VALUES (?, ?, ?, ?, ?)');
-        for (const user of initialUsers) {
-            await stmt.run(user.id, user.name, user.email, user.role, new Date().toISOString());
-        }
-        await stmt.finalize();
-    }
-    
-    const devicesCount = await db.get('SELECT COUNT(*) as count FROM devices');
-    if (devicesCount.count === 0) {
-        const stmt = await db.prepare('INSERT INTO devices (id, name, location, iconName, type, status, time, active, statusVariant) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        for (const device of initialDevices) {
-            await stmt.run(device.id, device.name, device.location, device.iconName, device.type, device.status, device.time, device.active, device.statusVariant);
-        }
-        await stmt.finalize();
-    }
+    try {
+        await client.query('BEGIN');
 
-    const roomsCount = await db.get('SELECT COUNT(*) as count FROM rooms');
-    if (roomsCount.count === 0) {
-        const stmt = await db.prepare('INSERT INTO rooms (name, temp) VALUES (?, ?)');
-        for (const room of initialRooms) {
-            await stmt.run(room.name, room.temp);
-        }
-        await stmt.finalize();
-    }
+        // Create Tables
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                email TEXT UNIQUE,
+                role TEXT,
+                lastLogin TIMESTAMPTZ
+            );
+            CREATE TABLE IF NOT EXISTS devices (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                location TEXT,
+                iconName TEXT,
+                type TEXT,
+                status TEXT,
+                time TEXT,
+                active BOOLEAN,
+                statusVariant TEXT
+            );
+            CREATE TABLE IF NOT EXISTS rooms (
+                name TEXT PRIMARY KEY,
+                temp REAL
+            );
+            CREATE TABLE IF NOT EXISTS scenes (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                iconName TEXT,
+                description TEXT
+            );
+            CREATE TABLE IF NOT EXISTS automations (
+                id TEXT PRIMARY KEY,
+                iconName TEXT,
+                name TEXT,
+                description TEXT,
+                trigger TEXT,
+                action TEXT,
+                status TEXT,
+                lastRun TEXT,
+                active BOOLEAN
+            );
+        `);
 
-    const scenesCount = await db.get('SELECT COUNT(*) as count FROM scenes');
-    if (scenesCount.count === 0) {
-        const stmt = await db.prepare('INSERT INTO scenes (id, name, iconName, description) VALUES (?, ?, ?, ?)');
-        for (const scene of initialScenes) {
-            await stmt.run(scene.id, scene.name, 'Sparkles', scene.description);
+        // Seed Data
+        const usersCountRes = await client.query('SELECT COUNT(*) as count FROM users');
+        if (usersCountRes.rows[0].count === '0') {
+            for (const user of initialUsers) {
+                await client.query('INSERT INTO users (id, name, email, role, lastLogin) VALUES ($1, $2, $3, $4, $5)', [user.id, user.name, user.email, user.role, new Date()]);
+            }
         }
-        await stmt.finalize();
-    }
+        
+        const devicesCountRes = await client.query('SELECT COUNT(*) as count FROM devices');
+        if (devicesCountRes.rows[0].count === '0') {
+            for (const device of initialDevices) {
+                await client.query('INSERT INTO devices (id, name, location, iconName, type, status, time, active, statusVariant) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [device.id, device.name, device.location, device.iconName, device.type, device.status, device.time, device.active, device.statusVariant]);
+            }
+        }
 
-    const automationsCount = await db.get('SELECT COUNT(*) as count FROM automations');
-    if (automationsCount.count === 0) {
-        const stmt = await db.prepare('INSERT INTO automations (id, iconName, name, description, trigger, action, status, lastRun, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        for (const automation of initialAutomations) {
-            await stmt.run(automation.id, 'Zap', automation.name, automation.description, automation.trigger, automation.action, automation.status, automation.lastRun, automation.active);
+        const roomsCountRes = await client.query('SELECT COUNT(*) as count FROM rooms');
+        if (roomsCountRes.rows[0].count === '0') {
+            for (const room of initialRooms) {
+                await client.query('INSERT INTO rooms (name, temp) VALUES ($1, $2)', [room.name, room.temp]);
+            }
         }
-        await stmt.finalize();
+
+        const scenesCountRes = await client.query('SELECT COUNT(*) as count FROM scenes');
+        if (scenesCountRes.rows[0].count === '0') {
+            for (const scene of initialScenes) {
+                await client.query('INSERT INTO scenes (id, name, iconName, description) VALUES ($1, $2, $3, $4)', [scene.id, scene.name, scene.iconName, scene.description]);
+            }
+        }
+
+        const automationsCountRes = await client.query('SELECT COUNT(*) as count FROM automations');
+        if (automationsCountRes.rows[0].count === '0') {
+            for (const automation of initialAutomations) {
+                await client.query('INSERT INTO automations (id, iconName, name, description, trigger, action, status, lastRun, active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [automation.id, automation.iconName, automation.name, automation.description, automation.trigger, automation.action, automation.status, automation.lastRun, automation.active]);
+            }
+        }
+
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
     }
 }
 
 // User Actions
-export async function db_getUsers() { return (await getDb()).all('SELECT * FROM users'); }
-export async function db_updateUserRole(userId: string, role: 'admin' | 'user') { (await getDb()).run('UPDATE users SET role = ? WHERE id = ?', role, userId); }
-export async function db_deleteUser(userId: string) { (await getDb()).run('DELETE FROM users WHERE id = ?', userId); }
-export async function db_getUserByEmail(email: string) { return (await getDb()).get('SELECT * FROM users WHERE email = ?', email); }
-export async function db_updateUserLoginTime(userId: string) { (await getDb()).run('UPDATE users SET lastLogin = ? WHERE id = ?', new Date().toISOString(), userId); }
+export async function db_getUsers(): Promise<UserProfile[]> { return (await getDb().query('SELECT * FROM users')).rows; }
+export async function db_updateUserRole(userId: string, role: 'admin' | 'user') { getDb().query('UPDATE users SET role = $1 WHERE id = $2', [role, userId]); }
+export async function db_deleteUser(userId: string) { getDb().query('DELETE FROM users WHERE id = $1', [userId]); }
+export async function db_getUserByEmail(email: string): Promise<UserProfile> { return (await getDb().query('SELECT * FROM users WHERE email = $1', [email])).rows[0]; }
+export async function db_updateUserLoginTime(userId: string) { getDb().query('UPDATE users SET lastLogin = $1 WHERE id = $2', [new Date(), userId]); }
 
 // Device Actions
-export async function db_getDevices() { return (await getDb()).all('SELECT * FROM devices'); }
-export async function db_getDevice(id: string) { return (await getDb()).get('SELECT * FROM devices WHERE id = ?', id); }
-export async function db_updateDevice(device: Partial<Device>) {
+export async function db_getDevices(): Promise<Omit<Device, 'icon'>[]> { return (await getDb().query('SELECT * FROM devices')).rows; }
+export async function db_getDevice(id: string): Promise<Omit<Device, 'icon'>> { return (await getDb().query('SELECT * FROM devices WHERE id = $1', [id])).rows[0]; }
+export async function db_updateDevice(device: Partial<Omit<Device, 'icon'>>) {
     const { id, ...fields } = device;
-    const setClause = Object.keys(fields).map(key => `${key} = ?`).join(', ');
+    const setClause = Object.keys(fields).map((key, i) => `"${key}" = $${i + 1}`).join(', ');
     const values = Object.values(fields);
-    (await getDb()).run(`UPDATE devices SET ${setClause} WHERE id = ?`, ...values, id);
+    await getDb().query(`UPDATE devices SET ${setClause} WHERE id = $${values.length + 1}`, [...values, id]);
 }
 export async function db_createDevice(data: NewDeviceData) {
-    const newDevice = { ...data, id: crypto.randomUUID(), active: false, status: 'Off', statusVariant: 'secondary', time: 'Just now', iconName: data.type };
-    (await getDb()).run('INSERT INTO devices (id, name, location, iconName, type, status, time, active, statusVariant) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', newDevice.id, newDevice.name, newDevice.location, newDevice.iconName, newDevice.type, newDevice.status, newDevice.time, newDevice.active, newDevice.statusVariant);
+    const newId = crypto.randomUUID();
+    const iconName = data.type === 'light' ? 'Lightbulb' : 'Zap';
+    const newDevice = { ...data, id: newId, active: false, status: 'Off', statusVariant: 'secondary', time: 'Just now', iconName: iconName };
+    await getDb().query('INSERT INTO devices (id, name, location, iconName, type, status, time, active, "statusVariant") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [newDevice.id, newDevice.name, newDevice.location, newDevice.iconName, newDevice.type, newDevice.status, newDevice.time, newDevice.active, newDevice.statusVariant]);
 }
-export async function db_deleteDevice(id: string) { (await getDb()).run('DELETE FROM devices WHERE id = ?', id); }
+export async function db_deleteDevice(id: string) { getDb().query('DELETE FROM devices WHERE id = $1', [id]); }
 
 // Room Actions
-export async function db_getRoomsRaw() { return (await getDb()).all('SELECT * FROM rooms'); }
-export async function db_createRoom(data: { name: string; temp: number }) { (await getDb()).run('INSERT INTO rooms (name, temp) VALUES (?, ?)', data.name, data.temp); }
-export async function db_updateRoom(name: string, data: { name: string; temp: number }) { (await getDb()).run('UPDATE rooms SET name = ?, temp = ? WHERE name = ?', data.name, data.temp, name); }
-export async function db_deleteRoom(name: string) { (await getDb()).run('DELETE FROM rooms WHERE name = ?', name); }
+export async function db_getRoomsRaw(): Promise<Pick<Room, 'name' | 'temp'>[]> { return (await getDb().query('SELECT * FROM rooms')).rows; }
+export async function db_createRoom(data: { name: string; temp: number }) { await getDb().query('INSERT INTO rooms (name, temp) VALUES ($1, $2)', [data.name, data.temp]); }
+export async function db_updateRoom(name: string, data: { name: string; temp: number }) { await getDb().query('UPDATE rooms SET name = $1, temp = $2 WHERE name = $3', [data.name, data.temp, name]); }
+export async function db_deleteRoom(name: string) { await getDb().query('DELETE FROM rooms WHERE name = $1', [name]); }
 export async function db_setAllLights(roomName: string, turnOn: boolean) {
     const status = turnOn ? 'On' : 'Off';
     const statusVariant = turnOn ? 'default' : 'secondary';
-    (await getDb()).run("UPDATE devices SET active = ?, status = ?, statusVariant = ? WHERE location = ? AND type = 'light'", turnOn, status, statusVariant, roomName);
+    await getDb().query('UPDATE devices SET active = $1, status = $2, "statusVariant" = $3 WHERE location = $4 AND type = \'light\'', [turnOn, status, statusVariant, roomName]);
 }
 
 // Scene Actions
-export async function db_getScenes() { return (await getDb()).all('SELECT * FROM scenes'); }
+export async function db_getScenes(): Promise<Omit<Scene, 'icon'>[]> { return (await getDb().query('SELECT * FROM scenes')).rows; }
 export async function db_createScene(name: string, description: string) {
     const id = crypto.randomUUID();
-    (await getDb()).run("INSERT INTO scenes (id, name, description, iconName) VALUES (?, ?, ?, ?)", id, name, description, 'Sparkles');
+    await getDb().query("INSERT INTO scenes (id, name, description, iconName) VALUES ($1, $2, $3, $4)", [id, name, description, 'Sparkles']);
 }
-export async function db_updateScene(id: string, data: { name: string; description: string }) { (await getDb()).run('UPDATE scenes SET name = ?, description = ? WHERE id = ?', data.name, data.description, id); }
-export async function db_deleteScene(id: string) { (await getDb()).run('DELETE FROM scenes WHERE id = ?', id); }
+export async function db_updateScene(id: string, data: { name: string, description: string }) { await getDb().query('UPDATE scenes SET name = $1, description = $2 WHERE id = $3', [data.name, data.description, id]); }
+export async function db_deleteScene(id: string) { await getDb().query('DELETE FROM scenes WHERE id = $1', [id]); }
 
 // Automation Actions
-export async function db_getAutomations() { return (await getDb()).all('SELECT * FROM automations'); }
+export async function db_getAutomations(): Promise<Omit<Automation, 'icon'>[]> { return (await getDb().query('SELECT * FROM automations')).rows; }
 export async function db_toggleAutomation(automationId: string, forceState?: boolean) {
-    const auto = await (await getDb()).get('SELECT active FROM automations WHERE id = ?', automationId);
-    if (!auto) return;
+    const res = await getDb().query('SELECT active FROM automations WHERE id = $1', [automationId]);
+    if (res.rows.length === 0) return;
+    const auto = res.rows[0];
     const newActiveState = forceState !== undefined ? forceState : !auto.active;
     const newStatus = newActiveState ? "Active" : "Paused";
-    (await getDb()).run('UPDATE automations SET active = ?, status = ? WHERE id = ?', newActiveState, newStatus, automationId);
+    await getDb().query('UPDATE automations SET active = $1, status = $2 WHERE id = $3', [newActiveState, newStatus, automationId]);
 }
 export async function db_createAutomation(data: NewAutomationData) {
     const newAutomation = { id: crypto.randomUUID(), ...data, iconName: 'Zap', active: true, status: 'Active', lastRun: 'Never' };
-    (await getDb()).run('INSERT INTO automations (id, name, description, trigger, action, iconName, active, status, lastRun) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', newAutomation.id, newAutomation.name, newAutomation.description, newAutomation.trigger, newAutomation.action, newAutomation.iconName, newAutomation.active, newAutomation.status, newAutomation.lastRun);
+    await getDb().query('INSERT INTO automations (id, name, description, trigger, action, iconName, active, status, lastRun) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [newAutomation.id, newAutomation.name, newAutomation.description, newAutomation.trigger, newAutomation.action, newAutomation.iconName, newAutomation.active, newAutomation.status, newAutomation.lastRun]);
 }
 export async function db_updateAutomation(id: string, data: Partial<NewAutomationData>) {
     const { ...fields } = data;
-    const setClause = Object.keys(fields).map(key => `${key} = ?`).join(', ');
+    const setClause = Object.keys(fields).map((key, i) => `"${key}" = $${i + 1}`).join(', ');
     const values = Object.values(fields);
-    (await getDb()).run(`UPDATE automations SET ${setClause} WHERE id = ?`, ...values, id);
+    await getDb().query(`UPDATE automations SET ${setClause} WHERE id = $${values.length + 1}`, [...values, id]);
 }
-export async function db_deleteAutomation(id: string) { (await getDb()).run('DELETE FROM automations WHERE id = ?', id); }
+export async function db_deleteAutomation(id: string) { await getDb().query('DELETE FROM automations WHERE id = $1', [id]); }

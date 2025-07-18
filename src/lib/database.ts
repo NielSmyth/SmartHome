@@ -224,4 +224,4 @@ export async function db_updateAutomation(id: string, data: Partial<NewAutomatio
 export async function db_deleteAutomation(id: string) { await getDb().query('DELETE FROM automations WHERE id = $1', [id]); }
 
 // Alter table to add statusVariant column to devices
-await getDb().query(`ALTER TABLE devices ADD COLUMN "statusVariant" VARCHAR(255);`);
+await getDb().query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS "statusVariant" VARCHAR(255);`);

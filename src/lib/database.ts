@@ -1,4 +1,3 @@
-
 'use server';
 
 import { Pool } from 'pg';
@@ -223,3 +222,6 @@ export async function db_updateAutomation(id: string, data: Partial<NewAutomatio
     await getDb().query(`UPDATE automations SET ${setClause} WHERE id = $${values.length + 1}`, [...values, id]);
 }
 export async function db_deleteAutomation(id: string) { await getDb().query('DELETE FROM automations WHERE id = $1', [id]); }
+
+// Alter table to add statusVariant column to devices
+await getDb().query(`ALTER TABLE devices ADD COLUMN "statusVariant" VARCHAR(255);`);

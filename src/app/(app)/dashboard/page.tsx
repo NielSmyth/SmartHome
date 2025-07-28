@@ -9,7 +9,7 @@ import { useAppContext } from '@/context/app-state-context';
 export default function DashboardPage() {
   const { devices, handleDeviceToggle } = useAppContext();
 
-  const sortedDevices = [...devices].sort(/* ... */);
+  const sortedDevices = [...devices].sort((a, b) => a.location.localeCompare(b.location) || a.name.localeCompare(b.name));
 
   return (
     <div className="flex flex-col gap-8">

@@ -166,7 +166,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
         const transformedDevices: Device[] = dbDevices.map(d => ({...d, icon: getIcon(d.iconName)}));
         
         const transformedRooms: Room[] = dbRoomsRaw.map(room => {
-            const roomDevices = transformedDevices.filter(d => d.location === room.name);
+            const roomDevices = transformedDevices.filter(d => d.location === room.name).sort((a, b) => a.name.localeCompare(b.name));
             const lights = roomDevices.filter(d => d.type.toLowerCase().includes('light'));
             return {
                 ...room,

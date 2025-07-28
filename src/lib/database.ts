@@ -168,7 +168,7 @@ export async function db_getUserByEmail(email: string): Promise<UserProfile> { r
 export async function db_updateUserLoginTime(userId: string) { getDb().query('UPDATE users SET lastLogin = $1 WHERE id = $2', [new Date(), userId]); }
 
 // Device Actions
-export async function db_getDevices(): Promise<Omit<Device, 'icon'>[]> { return (await getDb().query('SELECT * FROM devices')).rows; }
+export async function db_getDevices(): Promise<Omit<Device, 'icon'>[]> { return (await getDb().query('SELECT * FROM devices ORDER BY location, name')).rows; }
 export async function db_getDevice(id: string): Promise<Omit<Device, 'icon'>> { return (await getDb().query('SELECT * FROM devices WHERE id = $1', [id])).rows[0]; }
 export async function db_updateDevice(device: Partial<Omit<Device, 'icon'>>) {
     const { id, ...fields } = device;
@@ -185,7 +185,7 @@ export async function db_createDevice(data: NewDeviceData) {
 export async function db_deleteDevice(id: string) { getDb().query('DELETE FROM devices WHERE id = $1', [id]); }
 
 // Room Actions
-export async function db_getRoomsRaw(): Promise<Pick<Room, 'name' | 'temp'>[]> { return (await getDb().query('SELECT * FROM rooms')).rows; }
+export async function db_getRoomsRaw(): Promise<Pick<Room, 'name' | 'temp'>[]> { return (await getDb().query('SELECT * FROM rooms ORDER BY name')).rows; }
 export async function db_createRoom(data: { name: string; temp: number }) { await getDb().query('INSERT INTO rooms (name, temp) VALUES ($1, $2)', [data.name, data.temp]); }
 export async function db_updateRoom(name: string, data: { name: string; temp: number }) { await getDb().query('UPDATE rooms SET name = $1, temp = $2 WHERE name = $3', [data.name, data.temp, name]); }
 export async function db_deleteRoom(name: string) { await getDb().query('DELETE FROM rooms WHERE name = $1', [name]); }
@@ -235,8 +235,9 @@ await getDb().query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT;`)
 export async function createUserInDb({ fullName, email, password }: { fullName: string, email: string, password: string }) {
   const db = getDb();
   const hashedPassword = await bcrypt.hash(password, 10);
+  const newId = crypto.randomUUID();
   await db.query(
-    'INSERT INTO users (full_name, email, password) VALUES ($1, $2, $3)',
-    [fullName, email, hashedPassword]
+    'INSERT INTO users (id, name, email, password, role, lastLogin) VALUES ($1, $2, $3, $4, $5, $6)',
+    [newId, fullName, email, hashedPassword, 'user', new Date()]
   );
 }

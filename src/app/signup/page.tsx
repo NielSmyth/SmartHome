@@ -2,11 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import bcrypt from 'bcryptjs';
-
+import { useActionState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -15,64 +11,33 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Home, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { createUserInDb } from '@/lib/database';
-
-const signUpSchema = z.object({
-  fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
-  email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
-});
-
-export async function createUser(email: string, password: string) {
-  const hashedPassword = await bcrypt.hash(password, 10);
-  // Save email and hashedPassword to DB
-}
+import { signupAction } from '@/lib/actions';
 
 export default function SignUpPage() {
   const router = useRouter();
   const { toast } = useToast();
-
-  const form = useForm<z.infer<typeof signUpSchema>>({
-    resolver: zodResolver(signUpSchema),
-    defaultValues: {
-      fullName: '',
-      email: '',
-      password: '',
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof signUpSchema>) {
+  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
     try {
-      // Hash password and save user to DB
-      await createUserInDb({
-        fullName: values.fullName,
-        email: values.email,
-        password: values.password,
-      });
+      await signupAction(formData);
       toast({
         title: "Account Created!",
         description: "You've been successfully signed up. Please log in.",
       });
       router.push('/login');
+      return { success: true };
     } catch (error: any) {
       toast({
         title: "Sign Up Failed",
         description: error.message || "Could not create account.",
         variant: "destructive",
       });
+      return { error: error.message };
     }
-  }
+  }, null);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white p-4">
@@ -97,72 +62,49 @@ export default function SignUpPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="space-y-4"
-            >
-              <FormField
-                control={form.control}
+          <form action={formAction} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
                 name="fullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter your full name"
-                        className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                placeholder="Enter your full name"
+                className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
+                required
+                minLength={2}
               />
-              <FormField
-                control={form.control}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
                 name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="Enter your email"
-                        className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                type="email"
+                placeholder="Enter your email"
+                className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
+                required
               />
-              <FormField
-                control={form.control}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
                 name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Enter your password"
-                        className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                type="password"
+                placeholder="Enter your password"
+                className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:bg-slate-700"
+                required
+                minLength={8}
               />
-              <Button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700"
-              >
-                Create Account
-              </Button>
-            </form>
-          </Form>
+            </div>
+            <Button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              disabled={isPending}
+            >
+              {isPending ? 'Creating Account...' : 'Create Account'}
+            </Button>
+          </form>
           <div className="mt-4 text-center text-sm text-slate-400">
             Already have an account?{' '}
             <Link href="/login" className="underline text-blue-400 hover:text-blue-300">

@@ -82,7 +82,7 @@ export default function RoomsPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {room.devices.map((device) => (
+              {room.devices.sort((a, b) => a.name.localeCompare(b.name)).map((device) => (
                 <DeviceItem
                   key={device.name}
                   device={device}

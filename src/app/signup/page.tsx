@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import bcrypt from 'bcryptjs';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -25,12 +26,18 @@ import {
 import { Input } from '@/components/ui/input';
 import { Home, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { createUserInDb } from '@/lib/database';
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
+
+export async function createUser(email: string, password: string) {
+  const hashedPassword = await bcrypt.hash(password, 10);
+  // Save email and hashedPassword to DB
+}
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -45,14 +52,26 @@ export default function SignUpPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof signUpSchema>) {
-    // In a real app, you would handle user creation here (e.g., Firebase Auth)
-    console.log('New user signed up:', values);
-    toast({
-      title: "Account Created!",
-      description: "You've been successfully signed up. Please log in.",
-    });
-    router.push('/login');
+  async function onSubmit(values: z.infer<typeof signUpSchema>) {
+    try {
+      // Hash password and save user to DB
+      await createUserInDb({
+        fullName: values.fullName,
+        email: values.email,
+        password: values.password,
+      });
+      toast({
+        title: "Account Created!",
+        description: "You've been successfully signed up. Please log in.",
+      });
+      router.push('/login');
+    } catch (error: any) {
+      toast({
+        title: "Sign Up Failed",
+        description: error.message || "Could not create account.",
+        variant: "destructive",
+      });
+    }
   }
 
   return (

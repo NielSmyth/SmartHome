@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -28,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Home, Shield } from 'lucide-react';
 import { useAppContext } from '@/context/app-state-context';
 import { useToast } from '@/hooks/use-toast';
+import bcrypt from 'bcryptjs';
 
 const signInSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -147,4 +147,17 @@ export default function LoginPage() {
       </Card>
     </div>
   );
+}
+
+// Import or define db_getUserByEmail at the top of your file
+import { db_getUserByEmail } from '@/lib/database'; // Adjust the import path as needed
+
+export async function loginUser(email: string, password: string) {
+  const user = await db_getUserByEmail(email);
+  if (!user) return null;
+  // Adjust the property name to match the actual hashed password field in your UserProfile type
+  const hashedPassword = (user as any).hashedPassword || (user as any).passwordHash || (user as any).password;
+  if (!hashedPassword) return null;
+  const isMatch = await bcrypt.compare(password, hashedPassword);
+  return isMatch ? user : null;
 }

@@ -1,6 +1,7 @@
 'use server';
 
 import { Pool } from 'pg';
+import bcrypt from 'bcryptjs';
 import type { UserProfile, Device, Room, Scene, Automation, NewDeviceData, NewAutomationData } from '@/context/app-state-context';
 
 // Use a global variable to store the pool, ensuring it's a singleton.
@@ -76,7 +77,8 @@ export async function initializeDb() {
                 name TEXT,
                 email TEXT UNIQUE,
                 role TEXT,
-                lastLogin TIMESTAMPTZ
+                lastLogin TIMESTAMPTZ,
+                full_name VARCHAR(255)
             );
             CREATE TABLE IF NOT EXISTS devices (
                 id TEXT PRIMARY KEY,
@@ -225,3 +227,12 @@ export async function db_deleteAutomation(id: string) { await getDb().query('DEL
 
 // Alter table to add statusVariant column to devices
 await getDb().query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS "statusVariant" VARCHAR(255);`);
+
+export async function createUserInDb({ fullName, email, password }: { fullName: string, email: string, password: string }) {
+  const db = getDb();
+  const hashedPassword = await bcrypt.hash(password, 10);
+  await db.query(
+    'INSERT INTO users (full_name, email, password) VALUES ($1, $2, $3)',
+    [fullName, email, hashedPassword]
+  );
+}

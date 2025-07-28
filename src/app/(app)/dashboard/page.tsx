@@ -9,6 +9,8 @@ import { useAppContext } from '@/context/app-state-context';
 export default function DashboardPage() {
   const { devices, handleDeviceToggle } = useAppContext();
 
+  const sortedDevices = [...devices].sort(/* ... */);
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -21,7 +23,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {devices.map((device) => (
+        {sortedDevices.map((device) => (
           <Card key={device.id}>
             <CardContent className="p-4 flex flex-col gap-4">
               <div className="flex items-start justify-between">
